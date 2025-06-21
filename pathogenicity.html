@@ -1,83 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BioAML — AI for Biology, Health & Agriculture</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+  <meta charset="UTF‑8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VirTransformer – Predict Pathogenicity</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Roboto', sans-serif;
-      background: #f9fbfc;
-      color: #333;
-    }
-    header {
-      background: #0c2a4d;
-      color: #fff;
-      padding: 1.5rem;
-      text-align: center;
-    }
-    header h1 {
-      font-size: 2rem;
-    }
-    nav {
-      background: #17395c;
-      text-align: center;
-      padding: 0.5rem 0;
-    }
-    nav a {
-      color: #fff;
-      text-decoration: none;
-      margin: 0 1rem;
-      font-weight: 500;
-    }
-    .hero {
-      padding: 2rem;
-      text-align: center;
-    }
-    .hero h2 {
-      margin-bottom: 1rem;
-      color: #17395c;
-    }
-    iframe {
-      border: none;
-      width: 100%;
-      height: 800px;
-    }
-    footer {
-      text-align: center;
-      background: #0c2a4d;
-      color: #fff;
-      padding: 1rem;
-      margin-top: 2rem;
-    }
+    body { margin:0; font-family:sans-serif; background:#f9fbfc; color:#333; padding:1rem; }
+    textarea { width:100%; height:8rem; font-size:1rem; padding:.5rem; }
+    button { padding:.7rem 1.5rem; background:#0c2a4d; color:#fff; border:none; font-size:1rem; cursor:pointer; margin-top:.5rem; }
+    pre { background:#eef; padding:1rem; margin-top:1rem; overflow-x:auto; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>BioAML</h1>
-    <p>Artificial Intelligence for Biology, Medicine, and Life</p>
-  </header>
 
-  <nav>
-    <a href="#">Home</a>
-    <a href="#virtransformer">VirTransformer</a>
-    <a href="#">Crop Yield</a>
-    <a href="#">Services</a>
-  </nav>
+  <h2>🧬 VirTransformer</h2>
+  <p>Paste your DNA sequence below and click <strong>Run Prediction</strong>:</p>
+  <textarea id="dnaInput" placeholder="Enter DNA sequence…"></textarea>
+  <button id="runBtn">Run Prediction</button>
 
-  <section class="hero" id="virtransformer">
-    <h2>🧬 VirTransformer: Predict Virus Infection Potential in Humans</h2>
-    <iframe src="https://rajaatif786-virtransformer-250bp.hf.space"></iframe>
-  </section>
+  <h3>Results</h3>
+  <pre id="output">Awaiting your input…</pre>
 
-  <footer>
-    &copy; 2025 BioAML — Built with ❤️ in Pakistan
-  </footer>
+  <script>
+    const SPACE_URL = "https://rajaatif786-virtransformer-250bp.hf.space";
+    let sessionHash = null;
+
+    async function runInference() {
+      const seq = document.getElementById('dnaInput').value.trim();
+      if (!seq) { alert("Please enter a DNA sequence."); return; }
+      document.getElementById('output').innerText = "Running inference…";
+
+      // 1️⃣ POST to /call/predict to get event_id
+      const postRes = await fetch(`${SPACE_URL}/call/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: [seq], fn_index: 0, session_hash: sessionHash })
+      });
+      if (!postRes.ok) {
+        document.getElementById('output').innerText = `POST error: ${postRes.status}`;
+        return;
+      }
+      const { event_id } = await postRes.json();
+
+      // 2️⃣ GET results with event_id
+      const getRes = await fetch(`${SPACE_URL}/call/predict/${event_id}`);
+      if (!getRes.ok) {
+        document.getElementById('output').innerText = `GET error: ${getRes.status}`;
+        return;
+      }
+      const text = await getRes.text();
+      const json = JSON.parse(text.split("data: ").pop());
+      sessionHash = json.session_hash; // reuse session
+
+      document.getElementById('output').innerText = JSON.stringify(json.data, null, 2);
+    }
+
+    document.getElementById('runBtn').addEventListener('click', runInference);
+  </script>
+
 </body>
 </html>
