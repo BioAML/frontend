@@ -1,168 +1,200 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BioAML - AI for Biology & Health</title>
+  <title>BioAML — AI-Powered Biosciences</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');body {
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-  background-color: #0b0f1a;
-  color: #ffffff;
-}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-.hero {
-  background: url('https://media.giphy.com/media/3o7TKy4Tm5xg5lN1La/giphy.gif') center center / cover no-repeat;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 0 1rem;
-  position: relative;
-}
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0a0a0a;
+      color: #f0f0f0;
+      line-height: 1.6;
+    }
 
-.hero::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-}
+    a {
+      color: #00ffe1;
+      text-decoration: none;
+    }
 
-.hero h1,
-.hero p,
-.hero a {
-  position: relative;
-  z-index: 1;
-}
+    .hero {
+      position: relative;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
+    }
 
-.hero h1 {
-  font-size: 3rem;
-  color: #00ffc3;
-  font-weight: 800;
-  margin-bottom: 1rem;
-}
+    #bg-video {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
 
-.hero p {
-  font-size: 1.25rem;
-  max-width: 700px;
-  margin-bottom: 2rem;
-}
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
 
-.hero a {
-  background: #00ffc3;
-  color: #000;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: bold;
-}
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      padding: 1rem;
+    }
 
-.category {
-  background: #111827;
-  margin: 2rem auto;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 850px;
-  box-shadow: 0 0 12px rgba(0, 255, 195, 0.15);
-}
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
 
-.category h2 {
-  color: #00ffc3;
-  margin-bottom: 1rem;
-}
+    .hero p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
 
-.category ul {
-  list-style: none;
-  padding-left: 0;
-}
+    .hero a {
+      padding: 0.75rem 1.5rem;
+      background: #00ffe1;
+      color: #000;
+      font-weight: bold;
+      border-radius: 6px;
+    }
 
-.category ul li {
-  margin: 0.6rem 0;
-  font-size: 1.05rem;
-}
+    section.modules {
+      padding: 4rem 1rem;
+      max-width: 1000px;
+      margin: auto;
+    }
 
-.category ul li a {
-  color: #80ffe3;
-  text-decoration: none;
-}
+    section.modules h2 {
+      font-size: 2.2rem;
+      margin-bottom: 2rem;
+      color: #00ffe1;
+      text-align: center;
+    }
 
-.category ul li a:hover {
-  text-decoration: underline;
-}
+    .category {
+      margin-bottom: 2.5rem;
+    }
 
-footer {
-  margin-top: 3rem;
-  padding: 1.5rem;
-  background-color: #000;
-  color: #aaa;
-  text-align: center;
-  font-size: 0.9rem;
-}
+    .category h3 {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+      color: #ffffff;
+    }
 
-@media (max-width: 600px) {
-  .hero h1 {
-    font-size: 2.2rem;
-  }
-  .hero p {
-    font-size: 1rem;
-  }
-}
+    ul {
+      list-style: none;
+      padding-left: 1rem;
+    }
 
+    li {
+      margin: 0.3rem 0;
+    }
+
+    footer {
+      padding: 2rem 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #888;
+    }
+
+    @media screen and (max-width: 600px) {
+      .hero h1 {
+        font-size: 2rem;
+      }
+
+      .hero p {
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
+
   <section class="hero">
-    <h1>Welcome to BioAML</h1>
-    <p>AI-Driven Solutions for Biology, Genomics, Agriculture, and Health</p>
-    <a href="#modules">Explore Modules</a>
-  </section>  <section id="modules">
+    <video autoplay muted loop playsinline id="bg-video">
+      <source src="background.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <div class="hero-content">
+      <h1>Welcome to BioAML</h1>
+      <p>AI-Driven Solutions for Biology, Genomics, Agriculture, and Health</p>
+      <a href="#modules">Explore Modules</a>
+    </div>
+  </section>
+
+  <section id="modules" class="modules">
+    <h2>Our AI Modules</h2>
+
     <div class="category">
-      <h2>🧬 Genomics</h2>
+      <h3>🧬 Genomics</h3>
       <ul>
         <li><a href="pathogenicity.html">Genomic Pathogenicity</a></li>
-        <li>Genome-to-Phenotype</li>
-        <li>Population & Environmental Genomics</li>
+        <li><a href="#">Genome-to-Phenotype</a></li>
+        <li><a href="#">Population & Environmental Genomics</a></li>
       </ul>
-    </div><div class="category">
-  <h2>🌾 Agriculture</h2>
-  <ul>
-    <li>Crop Yield Prediction</li>
-    <li>Disease Detection (Leaf/Soil/Root)</li>
-    <li>Satellite Imagery Analysis</li>
-  </ul>
-</div>
+    </div>
 
-<div class="category">
-  <h2>🧠 Medical Imaging</h2>
-  <ul>
-    <li>Tumor Segmentation</li>
-    <li>Disease Progression Monitoring</li>
-    <li>Radiology AI Models</li>
-  </ul>
-</div>
+    <div class="category">
+      <h3>🌾 Agriculture</h3>
+      <ul>
+        <li><a href="#">Crop Yield Prediction</a></li>
+        <li><a href="#">Disease Detection (Leaf/Soil/Root)</a></li>
+        <li><a href="#">Satellite Imagery Analysis</a></li>
+      </ul>
+    </div>
 
-<div class="category">
-  <h2>🛰 Satellite AI</h2>
-  <ul>
-    <li>Land Use & Soil Health Detection</li>
-    <li>Deforestation & Water Stress Alerts</li>
-    <li>Climate-Genomics Integrations</li>
-  </ul>
-</div>
+    <div class="category">
+      <h3>🧠 Medical Imaging</h3>
+      <ul>
+        <li><a href="#">Tumor Segmentation</a></li>
+        <li><a href="#">Disease Progression Monitoring</a></li>
+        <li><a href="#">Radiology AI Models</a></li>
+      </ul>
+    </div>
 
-<div class="category">
-  <h2>🧪 Biosensors & Mobile AI</h2>
-  <ul>
-    <li>Personal Health Monitors</li>
-    <li>Infectious Risk Detection from Symptoms</li>
-    <li>AI Biomarker Scanners</li>
-  </ul>
-</div>
+    <div class="category">
+      <h3>🛰 Satellite AI</h3>
+      <ul>
+        <li><a href="#">Land Use & Soil Health Detection</a></li>
+        <li><a href="#">Deforestation & Water Stress Alerts</a></li>
+        <li><a href="#">Climate-Genomics Integrations</a></li>
+      </ul>
+    </div>
 
-  </section>  <footer>
+    <div class="category">
+      <h3>🧪 Biosensors & Mobile AI</h3>
+      <ul>
+        <li><a href="#">Personal Health Monitors</a></li>
+        <li><a href="#">Infectious Risk Detection from Symptoms</a></li>
+        <li><a href="#">AI Biomarker Scanners</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
     © 2025 BioAML — Built with ❤️ in Pakistan
   </footer>
+
 </body>
 </html>
