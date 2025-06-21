@@ -1,42 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF‑8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>VirTransformer – Predict Pathogenicity</title>
   <style>
-    body { margin:0; padding:1rem; font-family:sans-serif; background:#f9fbfc; color:#333; }
-    textarea { width:100%; height:8rem; padding:.5rem; }
-    button { padding:.7rem 1.5rem; background:#0c2a4d; color:#fff; border:none; cursor:pointer; margin-top:.5rem; }
-    pre { background:#eef; padding:1rem; margin-top:1rem; white-space:pre-wrap; word-wrap:break-word; }
+    body{margin:0;padding:1rem;font-family:sans-serif;background:#f9fbfc;color:#333;}
+    textarea{width:100%;height:8rem;padding:.5rem;font-size:1rem;}
+    button{padding:.7rem 1.5rem;background:#0c2a4d;color:#fff;border:none;cursor:pointer;margin-top:.5rem;}
+    pre{background:#eef;padding:1rem;margin-top:1rem;white-space:pre-wrap;word-wrap:break-word;}
   </style>
 </head>
 <body>
   <h2>🧬 VirTransformer</h2>
-  <p>Paste DNA sequence; click <strong>Run Prediction</strong>:</p>
-  <textarea id="dnaInput" placeholder="ACTG..."></textarea>
+  <textarea id="dnaInput" placeholder="Enter DNA sequence…"></textarea><br>
   <button id="runBtn">Run Prediction</button>
   <h3>Results</h3>
   <pre id="output">Awaiting your input…</pre>
+
   <script>
     const SPACE_URL = "https://rajaatif786-vhbert.hf.space";
-    document.getElementById('runBtn').onclick = async () => {
-      const seq = document.getElementById('dnaInput').value.trim();
-      if (!seq) return alert("Enter a DNA sequence.");
-      document.getElementById('output').innerText = "Running…";
-      try {
-        const res = await fetch(`${SPACE_URL}/run/predict`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: [seq] })
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        document.getElementById('output').innerText = JSON.stringify(json.data, null, 2);
-      } catch (err) {
-        document.getElementById('output').innerText = `Error: ${err.message}`;
+
+    async function runInference() {
+      const seq = dnaInput.value.trim();
+      if (!seq) return alert("Please enter a DNA sequence.");
+      output.innerText = "Running inference…";
+
+      // Step 1: POST to /call/predict
+      const post = await fetch(`${SPACE_URL}/call/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: [seq] })
+      });
+      if (!post.ok) {
+        output.innerText = `POST error: ${post.status}`;
+        return;
       }
-    };
+      const { event_id } = await post.json();
+
+      // Step 2: GET the results stream
+      const get = await fetch(`${SPACE_URL}/call/predict/${event_id}`);
+      if (!get.ok) {
+        output.innerText = `GET error: ${get.status}`;
+        return;
+      }
+      const text = await get.text();
+      // Extract data JSON after "data: "
+      const match = text.match(/data:\s*(\[[^\]]*\])/);
+      if (!match) return output.innerText = "Response parse error";
+
+      const result = JSON.parse(match[1]);
+      output.innerText = JSON.stringify(result, null, 2);
+    }
+
+    runBtn.onclick = runInference;
   </script>
 </body>
 </html>
