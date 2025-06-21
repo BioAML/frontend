@@ -5,78 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VirTransformer – Predict Pathogenicity</title>
   <style>
-    body {
-      margin: 0;
-      padding: 1rem;
-      font-family: sans-serif;
-      background: #f9fbfc;
-      color: #333;
-    }
-    h2 {
-      margin-top: 0;
-    }
-    textarea {
-      width: 100%;
-      height: 8rem;
-      padding: 0.5rem;
-      font-size: 1rem;
-      box-sizing: border-box;
-    }
-    button {
-      margin-top: 0.5rem;
-      padding: 0.7rem 1.5rem;
-      background: #0c2a4d;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-    button:disabled {
-      opacity: 0.6;
-      cursor: default;
-    }
-    pre {
-      background: #eef;
-      padding: 1rem;
-      margin-top: 1rem;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      min-height: 4rem;
-    }
+    body { margin:0; padding:1rem; font-family:sans-serif; background:#f9fbfc; color:#333; }
+    h2 { margin-top:0; }
+    label { display:block; margin-top:1rem; }
+    input[type="password"], textarea { width:100%; box-sizing:border-box; padding:.5rem; font-size:1rem; }
+    textarea { height:8rem; }
+    button { margin-top:.75rem; padding:.7rem 1.5rem; background:#0c2a4d; color:#fff; border:none; cursor:pointer; font-size:1rem; }
+    button:disabled { opacity:.6; cursor:default; }
+    pre { background:#eef; padding:1rem; margin-top:1rem; white-space:pre-wrap; word-wrap:break-word; }
   </style>
 </head>
 <body>
 
-  <h2>🧬 VirTransformer</h2>
-  <p>Paste your DNA sequence below and click <strong>Run Prediction</strong>:</p>
-  <textarea id="dnaInput" placeholder="Enter DNA sequence…"></textarea>
+  <h2>🧬 VirTransformer – Pathogenicity Predictor</h2>
+
+  <label for="hfToken">Hugging Face Token (Read access):</label>
+  <input id="hfToken" type="password" placeholder="hf_xxx…" />
+
+  <label for="dnaInput">Paste DNA sequence below:</label>
+  <textarea id="dnaInput" placeholder="ACTGATCGATCG…"></textarea>
+
   <button id="runBtn">Run Prediction</button>
 
   <h3>Results</h3>
-  <pre id="output">Awaiting your input…</pre>
+  <pre id="output">Waiting for input…</pre>
 
   <script>
     (function(){
       const SPACE_URL = "https://rajaatif786-vhbert.hf.space";
-      const dnaInput = document.getElementById('dnaInput');
-      const runBtn   = document.getElementById('runBtn');
-      const output   = document.getElementById('output');
+      const tokenInput = document.getElementById('hfToken');
+      const dnaInput   = document.getElementById('dnaInput');
+      const runBtn     = document.getElementById('runBtn');
+      const output     = document.getElementById('output');
 
       runBtn.addEventListener('click', async () => {
-        const seq = dnaInput.value.trim();
-        if (!seq) {
-          alert("Please enter a DNA sequence.");
-          return;
-        }
+        const hfToken = tokenInput.value.trim();
+        const seq     = dnaInput.value.trim();
+        if (!hfToken) { alert("Please enter your HF token."); return; }
+        if (!seq)     { alert("Please paste a DNA sequence."); return; }
 
-        // disable while running
         runBtn.disabled = true;
         output.innerText = "Running inference…";
 
         try {
           const res = await fetch(`${SPACE_URL}/run/predict`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${hfToken}`
+            },
             body: JSON.stringify({ data: [ seq ] })
           });
 
@@ -84,9 +61,9 @@
             output.innerText = `Error ${res.status}: ${res.statusText}`;
           } else {
             const json = await res.json();
-            // JSON.data is an array of your return dicts
             output.innerText = JSON.stringify(json.data, null, 2);
           }
+
         } catch (err) {
           output.innerText = `Network error: ${err.message}`;
         }
