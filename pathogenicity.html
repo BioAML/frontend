@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>VirTransformer – Predict Pathogenicity</title>
   <style>
-    body{margin:0;padding:1rem;font-family:sans-serif;background:#f9fbfc;color:#333;}
-    textarea{width:100%;height:8rem;padding:.5rem;font-size:1rem;}
-    button{padding:.7rem 1.5rem;background:#0c2a4d;color:#fff;border:none;cursor:pointer;margin-top:.5rem;}
-    pre{background:#eef;padding:1rem;margin-top:1rem;white-space:pre-wrap;word-wrap:break-word;}
+    body { margin:0;padding:1rem;font-family:sans-serif;background:#f9fbfc;color:#333; }
+    textarea { width:100%;height:8rem;padding:.5rem;font-size:1rem; }
+    button { padding:.7rem 1.5rem;background:#0c2a4d;color:#fff;border:none;cursor:pointer;margin-top:.5rem; }
+    pre { background:#eef;padding:1rem;margin-top:1rem;white-space:pre-wrap;word-wrap:break-word; }
   </style>
 </head>
 <body>
@@ -19,36 +19,28 @@
   <pre id="output">Awaiting your input…</pre>
 
   <script>
-    const SPACE_URL = "https://rajaatif786-vhbert.hf.space";
+    const BASE = "https://rajaatif786-vhbert.hf.space";
 
     async function runInference() {
       const seq = dnaInput.value.trim();
-      if (!seq) return alert("Please enter a DNA sequence.");
+      if (!seq) { alert("Please enter a DNA sequence."); return; }
       output.innerText = "Running inference…";
 
-      // Step 1: POST to /call/predict
-      const post = await fetch(`${SPACE_URL}/call/predict`, {
+      // Step 1: Submit sequence
+      const post = await fetch(`${BASE}/call/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ data: [seq] })
       });
-      if (!post.ok) {
-        output.innerText = `POST error: ${post.status}`;
-        return;
-      }
+      if (!post.ok) { output.innerText = `POST error: ${post.status}`; return; }
       const { event_id } = await post.json();
 
-      // Step 2: GET the results stream
-      const get = await fetch(`${SPACE_URL}/call/predict/${event_id}`);
-      if (!get.ok) {
-        output.innerText = `GET error: ${get.status}`;
-        return;
-      }
+      // Step 2: Retrieve the output
+      const get = await fetch(`${BASE}/call/predict/${event_id}`);
+      if (!get.ok) { output.innerText = `GET error: ${get.status}`; return; }
       const text = await get.text();
-      // Extract data JSON after "data: "
       const match = text.match(/data:\s*(\[[^\]]*\])/);
-      if (!match) return output.innerText = "Response parse error";
-
+      if (!match) { output.innerText = "Error parsing response"; return; }
       const result = JSON.parse(match[1]);
       output.innerText = JSON.stringify(result, null, 2);
     }
