@@ -6,54 +6,37 @@
   <title>VirTransformer – Predict Pathogenicity</title>
   <style>
     body { margin:0; padding:1rem; font-family:sans-serif; background:#f9fbfc; color:#333; }
-    textarea { width:100%; height:8rem; font-size:1rem; padding:.5rem; }
-    button { padding:.7rem 1.5rem; background:#0c2a4d; color:#fff; border:none; font-size:1rem; cursor:pointer; margin-top:.5rem; }
+    textarea { width:100%; height:8rem; padding:.5rem; }
+    button { padding:.7rem 1.5rem; background:#0c2a4d; color:#fff; border:none; cursor:pointer; margin-top:.5rem; }
     pre { background:#eef; padding:1rem; margin-top:1rem; white-space:pre-wrap; word-wrap:break-word; }
   </style>
 </head>
 <body>
-
   <h2>🧬 VirTransformer</h2>
-  <p>Paste your DNA sequence below and click <strong>Run Prediction</strong>:</p>
-  <textarea id="dnaInput" placeholder="Enter DNA sequence…"></textarea>
+  <p>Paste DNA sequence; click <strong>Run Prediction</strong>:</p>
+  <textarea id="dnaInput" placeholder="ACTG..."></textarea>
   <button id="runBtn">Run Prediction</button>
-
   <h3>Results</h3>
   <pre id="output">Awaiting your input…</pre>
-
   <script>
     const SPACE_URL = "https://rajaatif786-vhbert.hf.space";
-
-    async function runInference() {
+    document.getElementById('runBtn').onclick = async () => {
       const seq = document.getElementById('dnaInput').value.trim();
-      if (!seq) {
-        alert("Please enter a DNA sequence.");
-        return;
-      }
-
-      document.getElementById('output').innerText = "Running inference…";
-
+      if (!seq) return alert("Enter a DNA sequence.");
+      document.getElementById('output').innerText = "Running…";
       try {
-        // Step 1️⃣ Post to /run/predict or /call/predict
-        const postRes = await fetch(`${SPACE_URL}/run/predict`, {
+        const res = await fetch(`${SPACE_URL}/run/predict`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ data: [seq] })
         });
-        if (!postRes.ok) {
-          document.getElementById('output').innerText = `POST error: ${postRes.status}`;
-          return;
-        }
-        const jsonResponse = await postRes.json();
-
-        document.getElementById('output').innerText = JSON.stringify(jsonResponse.data, null, 2);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        document.getElementById('output').innerText = JSON.stringify(json.data, null, 2);
       } catch (err) {
         document.getElementById('output').innerText = `Error: ${err.message}`;
       }
-    }
-
-    document.getElementById('runBtn').addEventListener('click', runInference);
+    };
   </script>
-
 </body>
 </html>
