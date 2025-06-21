@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF‑8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VirTransformer – Predict Pathogenicity</title>
   <style>
-    body { margin:0; font-family:sans-serif; background:#f9fbfc; color:#333; padding:1rem; }
+    body { margin:0; padding:1rem; font-family:sans-serif; background:#f9fbfc; color:#333; }
     textarea { width:100%; height:8rem; font-size:1rem; padding:.5rem; }
     button { padding:.7rem 1.5rem; background:#0c2a4d; color:#fff; border:none; font-size:1rem; cursor:pointer; margin-top:.5rem; }
-    pre { background:#eef; padding:1rem; margin-top:1rem; overflow-x:auto; }
+    pre { background:#eef; padding:1rem; margin-top:1rem; white-space:pre-wrap; word-wrap:break-word; }
   </style>
 </head>
 <body>
@@ -23,36 +23,33 @@
 
   <script>
     const SPACE_URL = "https://rajaatif786-vhbert.hf.space";
-    let sessionHash = null;
 
     async function runInference() {
       const seq = document.getElementById('dnaInput').value.trim();
-      if (!seq) { alert("Please enter a DNA sequence."); return; }
+      if (!seq) {
+        alert("Please enter a DNA sequence.");
+        return;
+      }
+
       document.getElementById('output').innerText = "Running inference…";
 
-      // 1️⃣ POST to /call/predict to get event_id
-      const postRes = await fetch(`${SPACE_URL}/call/predict`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: [seq], fn_index: 0, session_hash: sessionHash })
-      });
-      if (!postRes.ok) {
-        document.getElementById('output').innerText = `POST error: ${postRes.status}`;
-        return;
-      }
-      const { event_id } = await postRes.json();
+      try {
+        // Step 1️⃣ Post to /run/predict or /call/predict
+        const postRes = await fetch(`${SPACE_URL}/run/predict`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: [seq] })
+        });
+        if (!postRes.ok) {
+          document.getElementById('output').innerText = `POST error: ${postRes.status}`;
+          return;
+        }
+        const jsonResponse = await postRes.json();
 
-      // 2️⃣ GET results with event_id
-      const getRes = await fetch(`${SPACE_URL}/call/predict/${event_id}`);
-      if (!getRes.ok) {
-        document.getElementById('output').innerText = `GET error: ${getRes.status}`;
-        return;
+        document.getElementById('output').innerText = JSON.stringify(jsonResponse.data, null, 2);
+      } catch (err) {
+        document.getElementById('output').innerText = `Error: ${err.message}`;
       }
-      const text = await getRes.text();
-      const json = JSON.parse(text.split("data: ").pop());
-      sessionHash = json.session_hash; // reuse session
-
-      document.getElementById('output').innerText = JSON.stringify(json.data, null, 2);
     }
 
     document.getElementById('runBtn').addEventListener('click', runInference);
