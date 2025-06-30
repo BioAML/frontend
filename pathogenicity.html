@@ -1,77 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VirTransformer – Predict Pathogenicity</title>
-  <style>
-    body { margin:0; padding:1rem; font-family:sans-serif; background:#f9fbfc; color:#333; }
-    h2 { margin-top:0; }
-    label { display:block; margin-top:1rem; }
-    input[type="password"], textarea { width:100%; box-sizing:border-box; padding:.5rem; font-size:1rem; }
-    textarea { height:8rem; }
-    button { margin-top:.75rem; padding:.7rem 1.5rem; background:#0c2a4d; color:#fff; border:none; cursor:pointer; font-size:1rem; }
-    button:disabled { opacity:.6; cursor:default; }
-    pre { background:#eef; padding:1rem; margin-top:1rem; white-space:pre-wrap; word-wrap:break-word; }
-  </style>
+  <title>VirTransformer Predictor</title>
 </head>
 <body>
-
-  <h2>🧬 VirTransformer – Pathogenicity Predictor</h2>
-
-  <label for="hfToken">Hugging Face Token (Read access):</label>
-  <input id="hfToken" type="password" placeholder="hf_xxx…" />
-
-  <label for="dnaInput">Paste DNA sequence below:</label>
-  <textarea id="dnaInput" placeholder="ACTGATCGATCG…"></textarea>
-
-  <button id="runBtn">Run Prediction</button>
-
-  <h3>Results</h3>
-  <pre id="output">Waiting for input…</pre>
+  <h2>Paste DNA sequence:</h2>
+  <textarea id="dnaInput" rows="6" cols="50"></textarea><br><br>
+  <button onclick="runPrediction()">Run Prediction</button>
+  <pre id="output"></pre>
 
   <script>
-    (function(){
-      const SPACE_URL = "https://rajaatif786-vhbert.hf.space";
-      const tokenInput = document.getElementById('hfToken');
-      const dnaInput   = document.getElementById('dnaInput');
-      const runBtn     = document.getElementById('runBtn');
-      const output     = document.getElementById('output');
+    async function runPrediction() {
+      const seq = document.getElementById('dnaInput').value.trim();
+      const output = document.getElementById('output');
+      output.textContent = "Processing...";
 
-      runBtn.addEventListener('click', async () => {
-        const hfToken = tokenInput.value.trim();
-        const seq     = dnaInput.value.trim();
-        if (!hfToken) { alert("Please enter your HF token."); return; }
-        if (!seq)     { alert("Please paste a DNA sequence."); return; }
+      try {
+        const res = await fetch("https://rajaatif786-vhbert.hf.space/predict_dna", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: [seq] })
+        });
 
-        runBtn.disabled = true;
-        output.innerText = "Running inference…";
-
-        try {
-          const res = await fetch(`${SPACE_URL}/run/predict`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${hfToken}`
-            },
-            body: JSON.stringify({ data: [ seq ] })
-          });
-
-          if (!res.ok) {
-            output.innerText = `Error ${res.status}: ${res.statusText}`;
-          } else {
-            const json = await res.json();
-            output.innerText = JSON.stringify(json.data, null, 2);
-          }
-
-        } catch (err) {
-          output.innerText = `Network error: ${err.message}`;
-        }
-
-        runBtn.disabled = false;
-      });
-    })();
+        const json = await res.json();
+        output.textContent = JSON.stringify(json.data[0], null, 2);
+      } catch (err) {
+        output.textContent = "Error: " + err.message;
+      }
+    }
   </script>
-
 </body>
 </html>
+
