@@ -116,7 +116,7 @@
       loading.style.display = "block";
 
       try {
-        const res = await fetch("https://vhbert.onrender.com/predict_dna", {
+        const res = await fetch("https://vhbert.onrender.com/predict", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ seq: seq })
