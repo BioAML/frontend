@@ -1,4 +1,146 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VirTransformer – Predict Pathogenicity</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 2rem;
+      color: #333;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #157347;
+      text-align: center;
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      resize: none;
+    }
+
+    button {
+      background: #198754;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      font-size: 1rem;
+      border-radius: 5px;
+      margin-top: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #157347;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #198754;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    pre {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 5px;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🧬 VirTransformer</h1>
+    <p>Paste a DNA sequence to predict its human pathogenicity.</p>
+    
+    <textarea id="dnaInput" placeholder="Enter DNA sequence..."></textarea>
+    <button onclick="predict()">🔍 Predict</button>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Predicting...</p>
+    </div>
+
+    <pre id="result">Awaiting input...</pre>
+  </div>
+
+  <script>
+    async function predict() {
+      const seq = document.getElementById("dnaInput").value.trim();
+      const resultBox = document.getElementById("result");
+      const loading = document.getElementById("loading");
+
+      if (!seq) {
+        alert("Please enter a DNA sequence.");
+        return;
+      }
+
+      resultBox.textContent = "";
+      loading.style.display = "block";
+
+      try {
+        const res = await fetch("https://vhbert.onrender.com/predict_dna", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ seq: seq })
+        });
+
+        const data = await res.json();
+        loading.style.display = "none";
+
+        if (res.ok) {
+          resultBox.textContent = JSON.stringify(data, null, 2);
+        } else {
+          resultBox.textContent = "❌ Error: " + JSON.stringify(data, null, 2);
+        }
+      } catch (err) {
+        loading.style.display = "none";
+        resultBox.textContent = "❌ Network error: " + err.message;
+      }
+    }
+  </script>
+
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
 <html>
 <head>
   <title>VirTransformer API Test</title>
@@ -174,3 +316,4 @@
   </script>
 </body>
 </html> -->
+ -->
