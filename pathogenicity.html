@@ -15,31 +15,33 @@
   <button onclick="predict()">Predict</button>
   <pre id="output">Waiting...</pre>
 
-  <script>
-    async function predict() {
-      const sequence = document.getElementById("input").value.trim();
-      const output = document.getElementById("output");
-      output.textContent = "⏳ Predicting...";
+<script>
+  async function predict() {
+    const sequence = document.getElementById("input").value.trim();
+    const output = document.getElementById("output");
+    output.textContent = "⏳ Predicting...";
 
-      try {
-        const res = await fetch("https://rajaatif786-vhbert.hf.space/run/predict_dna", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: [sequence] })
-        });
+    try {
+      const res = await fetch("https://rajaatif786-vhbert.hf.space/run/predict_dna", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: [sequence] })
+      });
 
-        if (!res.ok) {
-          output.textContent = `❌ Error ${res.status}: ${res.statusText}`;
-          return;
-        }
-
-        const json = await res.json();
-        output.textContent = `✅ Result:\n\n` + JSON.stringify(json.data[0], null, 2);
-      } catch (err) {
-        output.textContent = "❌ Network error: " + err.message;
+      if (!res.ok) {
+        output.textContent = `❌ Error ${res.status}: ${res.statusText}`;
+        return;
       }
+
+      const json = await res.json();
+      const resultObj = JSON.parse(json.data[0]);  // <- FIXED HERE
+      output.textContent = `✅ Result:\n\n` + JSON.stringify(resultObj, null, 2);
+    } catch (err) {
+      output.textContent = "❌ Network error: " + err.message;
     }
-  </script>
+  }
+</script>
+
 </body>
 </html>
 
