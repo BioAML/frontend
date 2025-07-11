@@ -1,4 +1,38 @@
 <!DOCTYPE html>
+<html>
+<head>
+  <title>VirTransformer API Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+  <h2>🧬 VirTransformer</h2>
+  <textarea id="dnaInput" placeholder="Enter DNA Sequence"></textarea>
+  <button onclick="runPrediction()">Run Prediction</button>
+
+  <pre id="output">Waiting for result...</pre>
+
+  <script>
+    async function runPrediction() {
+      const seq = document.getElementById("dnaInput").value.trim();
+      const output = document.getElementById("output");
+
+      output.innerText = "⏳ Running prediction...";
+
+      try {
+        const response = await axios.post("https://rajaatif786-vhbert.hf.space/run/predict_dna", {
+          data: [seq]
+        });
+
+        output.innerText = JSON.stringify(response.data, null, 2);
+      } catch (err) {
+        output.innerText = `❌ Error: ${err.response?.status || ''} ${err.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -43,7 +77,7 @@
 </script>
 
 </body>
-</html>
+</html> -->
 
 <!-- <!DOCTYPE html>
 <html>
