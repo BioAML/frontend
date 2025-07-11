@@ -22,7 +22,7 @@
     output.textContent = "⏳ Predicting...";
 
     try {
-      const res = await fetch("https://rajaatif786-vhbert.hf.space/run/predict_dna", {
+      const res = await fetch("https://rajaatif786-vhbert.hf.space//predict_dna", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ data: [sequence] })
