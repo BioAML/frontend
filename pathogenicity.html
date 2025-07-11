@@ -1,4 +1,49 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>VirTransformer Prediction</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f0f0f0; }
+    textarea, button { font-size: 1rem; padding: 0.5rem; width: 100%; margin-top: 1rem; }
+    pre { background: #eef; padding: 1rem; margin-top: 1rem; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>🧬 VirTransformer: Predict Pathogenicity</h2>
+  <textarea id="input" placeholder="Paste DNA sequence"></textarea>
+  <button onclick="predict()">Predict</button>
+  <pre id="output">Waiting...</pre>
+
+  <script>
+    async function predict() {
+      const sequence = document.getElementById("input").value.trim();
+      const output = document.getElementById("output");
+      output.textContent = "⏳ Predicting...";
+
+      try {
+        const res = await fetch("https://rajaatif786-vhbert.hf.space/run/predict_dna", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: [sequence] })
+        });
+
+        if (!res.ok) {
+          output.textContent = `❌ Error ${res.status}: ${res.statusText}`;
+          return;
+        }
+
+        const json = await res.json();
+        output.textContent = `✅ Result:\n\n` + JSON.stringify(json.data[0], null, 2);
+      } catch (err) {
+        output.textContent = "❌ Network error: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8" />
@@ -41,7 +86,7 @@
   </script>
 
 </body>
-</html>
+</html> -->
 
 <!-- <!DOCTYPE html>
 <html>
