@@ -185,9 +185,9 @@
       const data = await res.json();
       spinner.style.display = "none";
 
-      labelLine.textContent = `🧬 Label: ${data.label_name || "Unknown"}`;
-      scoreLine.textContent = `📊 Confidence Score: ${data.confidence?.toFixed(4) || "—"}`;
-      accessionLine.textContent = `🧾 Input/Accession: ${data.input_sequence || seq}`;
+      labelLine.textContent = `🧬 Label: ${data.result['label_name'] || "Unknown"}`;
+      scoreLine.textContent = `📊 Confidence Score: ${data.result['confidence']?.toFixed(4) || "—"}`;
+      accessionLine.textContent = `🧾 Input/Accession: ${data.accession || seq}`;
 
       outputBox.style.display = "block";
 
