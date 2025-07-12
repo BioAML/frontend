@@ -139,13 +139,15 @@
   <textarea id="dnaInput" placeholder="Paste DNA Sequence or Accession ID..."></textarea>
   <button onclick="predict()">🚀 Run Prediction</button>
 
-  <div id="spinner" class="spinner" style="display:none;"></div>
 
-  <div class="output-box" id="outputBox">
-    <h3>🧾 Prediction Summary</h3>
-    <div class="output-line" id="labelLine">🧬 Label: —</div>
-    <div class="output-line" id="scoreLine">📊 Confidence Score: —</div>
-    <div class="output-line" id="accessionLine">🧾 Input/Accession: —</div>
+  <!-- Spinner -->
+  <div class="spinner" id="spinner" style="display: none;"></div>
+  
+  <!-- Output Display -->
+  <div id="outputBox" style="display: none; margin-top: 20px;">
+    <p id="labelLine">🧬 Label: —</p>
+    <p id="scoreLine">📊 Confidence Score: —</p>
+    <p id="accessionLine">🧾 Input/Accession: —</p>
   </div>
 </div>
 
