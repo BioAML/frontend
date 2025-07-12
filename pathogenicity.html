@@ -184,15 +184,16 @@
         spinner.style.display = "none";
         return;
       }
+      const json = await res.json();
+      output.innerText = `✅ Prediction (${inputType}):\n\n` + JSON.stringify(json, null, 2);
+      // const data = await res.json();
+      // spinner.style.display = "none";
 
-      const data = await res.json();
-      spinner.style.display = "none";
+      // document.getElementById("labelLine").textContent = `🧬 Label: ${data.label_name || "Unknown"}`;
+      // document.getElementById("scoreLine").textContent = `📊 Confidence Score: ${data.confidence || "—"}`;
+      // document.getElementById("accessionLine").textContent = `🧾 Input/Accession: ${data.input_sequence || seq}`;
 
-      document.getElementById("labelLine").textContent = `🧬 Label: ${data.label_name || "Unknown"}`;
-      document.getElementById("scoreLine").textContent = `📊 Confidence Score: ${data.confidence || "—"}`;
-      document.getElementById("accessionLine").textContent = `🧾 Input/Accession: ${data.input_sequence || seq}`;
-
-      outputBox.style.display = "block";
+      // outputBox.style.display = "block";
 
     } catch (error) {
       alert("❌ Network error: " + error.message);
