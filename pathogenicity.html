@@ -315,61 +315,76 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
 <script>
   let igvBrowser = null; // global handle
 
-  async function renderGenome(predChunks, genomeLength, gffData) {
-    // === 1. Dispose old browser if exists ===
-    if (igvBrowser) {
-      igv.removeBrowser(igvBrowser);   // <- official IGV.js cleanup
-      igvBrowser = null;
-    }
-
-    // === 2. Build BED data from predictions ===
-    let bed = "";
-    predChunks.forEach(chunk => {
-      const label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
-      bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
-    });
-
-    const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
-    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
-    const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
-
-    // === 3. IGV config ===
-    const options = {
-      reference: {
-        id: "virus",
-        name: "Virus Genome",
-        fastaURL: fastaUrl
-      },
-      tracks: [
-        {
-          name: "Genome Annotations",
-          type: "annotation",
-          format: "gff3",
-          url: gffUrl,
-          displayMode: "EXPANDED"
-        },
-        {
-          name: "Pathogenicity Predictions",
-          type: "annotation",
-          format: "bed",
-          url: bedUrl,
-          color: feature => {
-            const name = (feature.name || "").toLowerCase();
-            if (name === "pathogenic") return "red";
-            if (name === "nonpathogenic") return "green";
-            return "gray";
-          },
-          displayMode: "EXPANDED"
-        }
-      ]
-    };
-
-    // === 4. Create new browser ===
-    const igvDiv = document.getElementById("igv-container");
-    igvDiv.innerHTML = ""; // clear div contents fully
-    igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("New IGV browser created");
+async function renderGenome(predChunks, genomeLength, gffData) {
+  if (igvBrowser) {
+    igv.removeBrowser(igvBrowser);
+    igvBrowser = null;
   }
+
+  // === 1. BED (labels) ===
+  let bed = "";
+  predChunks.forEach(chunk => {
+    const label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
+    bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
+  });
+
+  // === 2. BedGraph (scores/waves) ===
+  let bedGraph = "";
+  predChunks.forEach(chunk => {
+    bedGraph += `virus\t${chunk.start}\t${chunk.end}\t${chunk.score}\n`;
+  });
+
+  const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
+  const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
+  const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
+  const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
+
+  // === 3. IGV config ===
+  const options = {
+    reference: {
+      id: "virus",
+      name: "Virus Genome",
+      fastaURL: fastaUrl
+    },
+    tracks: [
+      {
+        name: "Genome Annotations",
+        type: "annotation",
+        format: "gff3",
+        url: gffUrl,
+        displayMode: "EXPANDED"
+      },
+      {
+        name: "Pathogenicity Predictions",
+        type: "annotation",
+        format: "bed",
+        url: bedUrl,
+        color: feature => {
+          const name = (feature.name || "").toLowerCase();
+          if (name === "pathogenic") return "red";
+          if (name === "nonpathogenic") return "green";
+          return "gray";
+        },
+        displayMode: "EXPANDED"
+      },
+      {
+        name: "Prediction Scores",
+        type: "wig",   // or "bedgraph"
+        format: "bedgraph",
+        url: bedGraphUrl,
+        color: "blue",
+        autoscale: true,
+        displayMode: "EXPANDED"
+      }
+    ]
+  };
+
+  // === 4. Create browser ===
+  const igvDiv = document.getElementById("igv-container");
+  igvDiv.innerHTML = "";
+  igvBrowser = await igv.createBrowser(igvDiv, options);
+  console.log("New IGV browser created");
+}
 </script>
 
 <!-- ===================== Cite Us Box ===================== -->
