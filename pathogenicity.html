@@ -331,33 +331,27 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
 </style>
 
 <script>
-  /**
-   * Render Genome Graphics with annotations + predictions
-   * @param {Array} predChunks - Array of predictions [{start, end, score, label}]
-   * @param {number} genomeLength - total length of genome
-   * @param {string} gffData - genome annotation (GFF3 text)
-   */
-  let igvBrowser = null;
-  
+  let igvBrowser = null; // global handle
+
   async function renderGenome(predChunks, genomeLength, gffData) {
-    // Kill the old browser if exists
+    // === 1. Dispose old browser if exists ===
     if (igvBrowser) {
-      await igvBrowser.removeAllTracks();  // remove tracks
+      igv.removeBrowser(igvBrowser);   // <- official IGV.js cleanup
       igvBrowser = null;
-      document.getElementById("igv-container").innerHTML = ""; // clear div completely
     }
-  
-    // === Build BED ===
+
+    // === 2. Build BED data from predictions ===
     let bed = "";
     predChunks.forEach(chunk => {
       const label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
       bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
     });
-  
+
     const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
     const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
     const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
-  
+
+    // === 3. IGV config ===
     const options = {
       reference: {
         id: "virus",
@@ -387,16 +381,14 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
         }
       ]
     };
-  
-    // Create fresh IGV browser in same container
+
+    // === 4. Create new browser ===
     const igvDiv = document.getElementById("igv-container");
+    igvDiv.innerHTML = ""; // clear div contents fully
     igvBrowser = await igv.createBrowser(igvDiv, options);
     console.log("New IGV browser created");
   }
-
-  // === Example Hook ===
-  // After predict(), you can call:
-  // renderGenome(data.result.chunks, data.result.genome_length, data.result.annotations_gff);
 </script>
+
 </body>
 </html>
