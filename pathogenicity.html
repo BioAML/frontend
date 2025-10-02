@@ -364,14 +364,14 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
           url: gffUrl,
           displayMode: "EXPANDED"
         },
-        {
+      {
           name: "Pathogenicity Predictions",
           type: "annotation",
           format: "bed",
           url: bedUrl,
-          color: feature => feature.name.includes("pathogenic") ? "red" : "green",
+          color: feature => feature.name.toLowerCase() === "pathogenic" ? "red" : "green",
           displayMode: "EXPANDED"
-        }
+      }
       ]
     };
 
