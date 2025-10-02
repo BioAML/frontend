@@ -316,30 +316,34 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
   let igvBrowser = null;
 
   async function renderGenome(predChunks, genomeLength, gffData) {
+    // === 1. Remove old browser if exists ===
     if (igvBrowser) {
       igv.removeBrowser(igvBrowser);
       igvBrowser = null;
     }
 
-    // === 1. BED (labels) ===
+    // === 2. BED track for labels (red/green) ===
     let bed = "";
     predChunks.forEach(chunk => {
       const label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
       bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
     });
 
-    // === 2. BedGraph (scores/waves) ===
+    // === 3. BedGraph track for probabilities (per-base) ===
     let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
     predChunks.forEach(chunk => {
-      bedGraph += `virus\t${chunk.start}\t${chunk.end}\t${chunk.score}\n`;
+      for (let pos = chunk.start; pos < chunk.end; pos++) {
+        bedGraph += `virus\t${pos}\t${pos+1}\t${chunk.score}\n`;
+      }
     });
 
+    // === 4. Create object URLs ===
     const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
     const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
     const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
     const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
 
-    // === 3. IGV config ===
+    // === 5. IGV config ===
     const options = {
       reference: {
         id: "virus",
@@ -368,9 +372,9 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
           displayMode: "EXPANDED"
         },
         {
-          name: "Prediction Scores (0-1)",
-          type: "wig",            // IGV wiggle track
-          format: "bedgraph",     // source file type
+          name: "Prediction Scores (Wave)",
+          type: "wig",
+          format: "bedgraph",
           url: bedGraphUrl,
           color: "blue",
           autoscale: true,
@@ -381,7 +385,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
       ]
     };
 
-    // === 4. Create browser ===
+    // === 6. Create browser ===
     const igvDiv = document.getElementById("igv-container");
     igvDiv.innerHTML = "";
     igvBrowser = await igv.createBrowser(igvDiv, options);
