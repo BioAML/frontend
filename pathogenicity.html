@@ -341,7 +341,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
     // === 1. Build BED data from predictions ===
     let bed = "";
     predChunks.forEach(chunk => {
-      const label = chunk.label.toLowerCase().includes("pathogenic") ? "Pathogenic" : "NonPathogenic";
+      const label = chunk.label.toLowerCase().includes("pathogenic") ? "pathogenic" : "nonpathogenic";
       bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
     });
 
