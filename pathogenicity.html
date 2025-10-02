@@ -301,5 +301,89 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
   }
 </script>
 
+
+<!-- Genome Pathogenicity Box -->
+<div class="genome-box">
+  <h2>🧬 Genome Pathogenicity View</h2>
+  <div id="igv-container" style="width:100%; height:500px; background:white; border-radius:12px;"></div>
+</div>
+
+<!-- IGV.js -->
+<script src="https://cdn.jsdelivr.net/npm/igv/dist/igv.min.js"></script>
+
+<style>
+  .genome-box {
+    max-width: 880px;
+    margin: 2.5rem auto;
+    padding: 1.5rem;
+    background: linear-gradient(to right, #1a73e8, #4caf50);
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    font-family: 'Inter', sans-serif;
+    color: white;
+    animation: fadeIn 0.6s ease;
+  }
+  .genome-box h2 {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+  }
+</style>
+
+<script>
+  /**
+   * Render Genome Graphics with annotations + predictions
+   * @param {Array} predChunks - Array of predictions [{start, end, score, label}]
+   * @param {number} genomeLength - total length of genome
+   * @param {string} gffData - genome annotation (GFF3 text)
+   */
+  async function renderGenome(predChunks, genomeLength, gffData) {
+    // === 1. Build BED data from predictions ===
+    let bed = "";
+    predChunks.forEach(chunk => {
+      const label = chunk.label.toLowerCase().includes("pathogenic") ? "Pathogenic" : "NonPathogenic";
+      bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
+    });
+
+    const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
+    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
+    const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
+
+    // === 2. IGV config ===
+    const options = {
+      reference: {
+        id: "virus",
+        name: "Virus Genome",
+        fastaURL: fastaUrl
+      },
+      tracks: [
+        {
+          name: "Genome Annotations",
+          type: "annotation",
+          format: "gff3",
+          url: gffUrl,
+          displayMode: "EXPANDED"
+        },
+        {
+          name: "Pathogenicity Predictions",
+          type: "annotation",
+          format: "bed",
+          url: bedUrl,
+          color: feature => feature.name.includes("Pathogenic") ? "red" : "green",
+          displayMode: "EXPANDED"
+        }
+      ]
+    };
+
+    // === 3. Create browser ===
+    const igvDiv = document.getElementById("igv-container");
+    igvDiv.innerHTML = ""; // reset old view
+    igv.createBrowser(igvDiv, options).then(b => console.log("IGV browser created"));
+  }
+
+  // === Example Hook ===
+  // After predict(), you can call:
+  // renderGenome(data.result.chunks, data.result.genome_length, data.result.annotations_gff);
+</script>
 </body>
 </html>
