@@ -337,62 +337,60 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
    * @param {number} genomeLength - total length of genome
    * @param {string} gffData - genome annotation (GFF3 text)
    */
+  let igvBrowser = null; // global handle
+  
   async function renderGenome(predChunks, genomeLength, gffData) {
-    // === 1. Build BED data from predictions ===
-  let bed = "";
-  predChunks.forEach(chunk => {
-    // normalize labels to two exact values
-    let label;
-    if (chunk.label.toLowerCase() === "pathogenic") {
-      label = "pathogenic";
-    } else {
-      label = "nonpathogenic"; // make consistent with color check
+    // Dispose previous browser if exists
+    if (igvBrowser) {
+      igvBrowser.dispose();
+      igvBrowser = null;
     }
   
-    // build proper BED line (tab-delimited)
-    bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
-  });
+    // === Build BED data ===
+    let bed = "";
+    predChunks.forEach(chunk => {
+      let label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
+      bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
+    });
   
-  const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
-  const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
-  const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
+    const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
+    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
+    const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
   
-  // === 2. IGV config ===
-  const options = {
-    reference: {
-      id: "virus",
-      name: "Virus Genome",
-      fastaURL: fastaUrl
-    },
-    tracks: [
-      {
-        name: "Genome Annotations",
-        type: "annotation",
-        format: "gff3",
-        url: gffUrl,
-        displayMode: "EXPANDED"
+    const options = {
+      reference: {
+        id: "virus",
+        name: "Virus Genome",
+        fastaURL: fastaUrl
       },
-      {
-        name: "Pathogenicity Predictions",
-        type: "annotation",
-        format: "bed",
-        url: bedUrl,
-        color: feature => {
-          const name = (feature.name || "").toLowerCase();
-          if (name === "pathogenic") return "red";
-          if (name === "nonpathogenic") return "green";
-          return "gray"; // fallback if unexpected
+      tracks: [
+        {
+          name: "Genome Annotations",
+          type: "annotation",
+          format: "gff3",
+          url: gffUrl,
+          displayMode: "EXPANDED"
         },
-        displayMode: "EXPANDED"
-      }
-    ]
-  };
-
-
-    // === 3. Create browser ===
+        {
+          name: "Pathogenicity Predictions",
+          type: "annotation",
+          format: "bed",
+          url: bedUrl,
+          color: feature => {
+            const name = (feature.name || "").toLowerCase();
+            if (name === "pathogenic") return "red";
+            if (name === "nonpathogenic") return "green";
+            return "gray";
+          },
+          displayMode: "EXPANDED"
+        }
+      ]
+    };
+  
+    // Create new browser
     const igvDiv = document.getElementById("igv-container");
-    igvDiv.innerHTML = ""; // reset old view
-    igv.createBrowser(igvDiv, options).then(b => console.log("IGV browser created"));
+    igvBrowser = await igv.createBrowser(igvDiv, options);
+    console.log("IGV browser created");
   }
 
   // === Example Hook ===
