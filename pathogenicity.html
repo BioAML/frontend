@@ -337,19 +337,20 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
    * @param {number} genomeLength - total length of genome
    * @param {string} gffData - genome annotation (GFF3 text)
    */
-  let igvBrowser = null; // global handle
+  let igvBrowser = null;
   
   async function renderGenome(predChunks, genomeLength, gffData) {
-    // Dispose previous browser if exists
+    // Kill the old browser if exists
     if (igvBrowser) {
-      igvBrowser.dispose();
+      await igvBrowser.removeAllTracks();  // remove tracks
       igvBrowser = null;
+      document.getElementById("igv-container").innerHTML = ""; // clear div completely
     }
   
-    // === Build BED data ===
+    // === Build BED ===
     let bed = "";
     predChunks.forEach(chunk => {
-      let label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
+      const label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
       bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
     });
   
@@ -387,10 +388,10 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
       ]
     };
   
-    // Create new browser
+    // Create fresh IGV browser in same container
     const igvDiv = document.getElementById("igv-container");
     igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("IGV browser created");
+    console.log("New IGV browser created");
   }
 
   // === Example Hook ===
