@@ -278,7 +278,7 @@
       accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
 
       outputBox.style.display = "block";
-
+      renderGenome(data.result.chunks, data.result.genome_length, data.result.annotations_gff);
     } catch (error) {
       alert("❌ Network error: " + error.message);
       spinner.style.display = "none";
