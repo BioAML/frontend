@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-K27QLF3HX0"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -126,6 +125,57 @@
     footer a:hover {
       text-decoration: underline;
     }
+
+    /* Styles for the new Cite Us box */
+    .cite-box {
+      margin-top: 2.5rem;
+      padding: 1.5rem 2rem;
+      border-radius: 12px;
+      background: #e3f2fd; /* Light blue background */
+      border: 1px solid #bbdefb;
+      text-align: center;
+    }
+
+    .cite-box h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.3rem;
+      color: #0d47a1;
+    }
+
+    .cite-box p {
+      margin-bottom: 1rem;
+      color: #333;
+    }
+
+    .cite-box pre {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9rem;
+      text-align: left;
+      color: #444;
+    }
+
+    .cite-button {
+      width: auto;
+      padding: 0.7rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      background: #4285F4; /* Google Blue */
+      display: inline-block;
+    }
+
+    .cite-button:hover {
+      background: #1a73e8;
+    }
+
   </style>
 </head>
 <body>
@@ -142,15 +192,28 @@
   <textarea id="dnaInput" placeholder="Paste DNA Sequence or Accession ID..."></textarea>
   <button onclick="predict()">🚀 Run Prediction</button>
 
-  <!-- Spinner -->
   <div class="spinner" id="spinner" style="display: none;"></div>
   
-  <!-- Output Display -->
   <div class="output-box" id="outputBox">
     <p class="output-line" id="labelLine">🧬 Label: —</p>
     <p class="output-line" id="scoreLine">📊 Confidence Score: —</p>
     <p class="output-line" id="accessionLine">🧾 Input/Accession: —</p>
   </div>
+
+  <div class="cite-box">
+    <h3>📝 Cite Us</h3>
+    <p>If you use VirTransformer in your research, please cite our paper:</p>
+    <pre id="citationText">@article{ammar2023vir,
+  title={Vir-BERT: A BERT-based approach for viral sequence classification},
+  author={Ammar, M and Rocca, G and Riaz, Y and others},
+  journal={bioRxiv},
+  year={2023},
+  publisher={Cold Spring Harbor Laboratory}
+}</pre>
+    <button class="cite-button" onclick="copyCitation()">📋 Copy BibTeX</button>
+    <p><a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=a4fOyR8AAAAJ&citation_for_view=a4fOyR8AAAAJ:d1gkVwhDpl0C" target="_blank">View on Google Scholar</a></p>
+  </div>
+
 </div>
 
 <footer>
@@ -204,6 +267,22 @@
       alert("❌ Network error: " + error.message);
       spinner.style.display = "none";
     }
+  }
+
+  // New function to handle copying the citation
+  function copyCitation() {
+    const citationText = document.getElementById('citationText').innerText;
+    const copyButton = document.querySelector('.cite-button');
+    
+    navigator.clipboard.writeText(citationText).then(() => {
+      copyButton.textContent = '✅ Copied!';
+      setTimeout(() => {
+        copyButton.textContent = '📋 Copy BibTeX';
+      }, 2000); // Revert back to original text after 2 seconds
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      alert('Could not copy text. Please try manually.');
+    });
   }
 </script>
 
