@@ -339,41 +339,55 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
    */
   async function renderGenome(predChunks, genomeLength, gffData) {
     // === 1. Build BED data from predictions ===
-    let bed = "";
-    predChunks.forEach(chunk => {
-      const label = chunk.label.toLowerCase().includes("pathogenic") ? "pathogenic" : "nonpathogenic";
-      bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
-    });
-
-    const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
-    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
-    const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
-
-    // === 2. IGV config ===
-    const options = {
-      reference: {
-        id: "virus",
-        name: "Virus Genome",
-        fastaURL: fastaUrl
-      },
-      tracks: [
-        {
-          name: "Genome Annotations",
-          type: "annotation",
-          format: "gff3",
-          url: gffUrl,
-          displayMode: "EXPANDED"
-        },
+  let bed = "";
+  predChunks.forEach(chunk => {
+    // normalize labels to two exact values
+    let label;
+    if (chunk.label.toLowerCase() === "pathogenic") {
+      label = "pathogenic";
+    } else {
+      label = "nonpathogenic"; // make consistent with color check
+    }
+  
+    // build proper BED line (tab-delimited)
+    bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
+  });
+  
+  const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
+  const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
+  const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
+  
+  // === 2. IGV config ===
+  const options = {
+    reference: {
+      id: "virus",
+      name: "Virus Genome",
+      fastaURL: fastaUrl
+    },
+    tracks: [
       {
-          name: "Pathogenicity Predictions",
-          type: "annotation",
-          format: "bed",
-          url: bedUrl,
-          color: feature => feature.name.toLowerCase() === "pathogenic" ? "red" : "green",
-          displayMode: "EXPANDED"
+        name: "Genome Annotations",
+        type: "annotation",
+        format: "gff3",
+        url: gffUrl,
+        displayMode: "EXPANDED"
+      },
+      {
+        name: "Pathogenicity Predictions",
+        type: "annotation",
+        format: "bed",
+        url: bedUrl,
+        color: feature => {
+          const name = (feature.name || "").toLowerCase();
+          if (name === "pathogenic") return "red";
+          if (name === "nonpathogenic") return "green";
+          return "gray"; // fallback if unexpected
+        },
+        displayMode: "EXPANDED"
       }
-      ]
-    };
+    ]
+  };
+
 
     // === 3. Create browser ===
     const igvDiv = document.getElementById("igv-container");
