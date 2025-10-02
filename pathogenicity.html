@@ -275,7 +275,7 @@
 
       labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
       scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
-      accessionLine.textContent = `🧾 Input/Accession: ${data.accession || seq}`;
+      accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
 
       outputBox.style.display = "block";
 
