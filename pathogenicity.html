@@ -363,12 +363,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
           type: "annotation",
           format: "bed",
           url: bedUrl,
-          color: feature => {
-            const name = (feature.name || "").toLowerCase();
-            if (name === "pathogenic") return "red";
-            if (name === "nonpathogenic") return "green";
-            return "gray";
-          },
+          color: feature => feature.score > 0.5 ? "red" : "green",
           displayMode: "EXPANDED"
         },
         {
