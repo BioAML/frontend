@@ -313,80 +313,101 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
 </style>
 
 <script>
-  let igvBrowser = null;
+let igvBrowser = null;
 
-  async function renderGenome(predChunks, genomeLength, gffData) {
+async function renderGenome(predChunks, dna_sequence, gffData) {
     // === 1. Remove old browser if exists ===
     if (igvBrowser) {
-      igv.removeBrowser(igvBrowser);
-      igvBrowser = null;
+        igv.removeBrowser(igvBrowser);
+        igvBrowser = null;
     }
 
-    // === 2. BED track for labels (red/green) ===
+    const genomeLength = dna_sequence.length;
+
+    // === 2. BED track for chunk-based labels (optional) ===
     let bed = "";
     predChunks.forEach(chunk => {
-      const label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
-      bed += `virus\t${chunk.start}\t${chunk.end}\t.\t${chunk.score}\n`;
+        const label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
+        bed += `virus\t${chunk.start}\t${chunk.end}\t.\t${chunk.score}\n`;
     });
 
-    // === 3. BedGraph track for probabilities (per-base) ===
+    // === 3. BedGraph track for per-base probabilities (optional) ===
     let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
     predChunks.forEach(chunk => {
-      for (let pos = chunk.start; pos < chunk.end; pos++) {
-        bedGraph += `virus\t${pos}\t${pos+1}\t${chunk.score}\n`;
-      }
+        for (let pos = chunk.start; pos < chunk.end; pos++) {
+            bedGraph += `virus\t${pos}\t${pos+1}\t${chunk.score}\n`;
+        }
     });
 
-    // === 4. Create object URLs ===
+    // === 4. Whole-genome pathogenicity GFF3 ===
+    const predGff = `##gff-version 3
+virus	Prediction	region	1	${genomeLength}	.	.	.	Label=pathogenic`;
+
+    // === 5. Create object URLs ===
+    const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${dna_sequence}`], { type: "text/plain" }));
+    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
+    const predUrl = URL.createObjectURL(new Blob([predGff], { type: "text/plain" }));
     const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
     const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
-    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
-    const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
 
-    // === 5. IGV config ===
+    // === 6. IGV browser configuration ===
     const options = {
-      reference: {
-        id: "virus",
-        name: "Virus Genome",
-        fastaURL: fastaUrl
-      },
-      tracks: [
-        {
-          name: "Genome Annotations",
-          type: "annotation",
-          format: "gff3",
-          url: gffUrl,
-          displayMode: "EXPANDED"
+        reference: {
+            id: "virus",
+            name: "Virus Genome",
+            fastaURL: fastaUrl
         },
-        {
-          name: "Pathogenicity Predictions",
-          type: "annotation",
-          format: "bed",
-          url: bedUrl,
-          color: feature => feature.score > 0.5 ? "red" : "green",
-          displayMode: "EXPANDED"
-        },
-        {
-          name: "Prediction Scores (Wave)",
-          type: "wig",
-          format: "bedgraph",
-          url: bedGraphUrl,
-          color: "blue",
-          autoscale: true,
-          min: 0,
-          max: 1,
-          displayMode: "EXPANDED"
-        }
-      ]
+        tracks: [
+            {
+                name: "NCBI Annotations",
+                type: "annotation",
+                format: "gff3",
+                url: gffUrl,
+                displayMode: "EXPANDED",
+                color: feature => {
+                    if (feature.type === "gene") return "orange";
+                    if (feature.type === "CDS") return "green";
+                    return "gray";
+                }
+            },
+            {
+                name: "Whole-Genome Pathogenicity",
+                type: "annotation",
+                format: "gff3",
+                url: predUrl,
+                displayMode: "EXPANDED",
+                color: feature => feature.attributes.includes("pathogenic") ? "red" : "green"
+            },
+            {
+                name: "Chunk-Based Predictions",
+                type: "annotation",
+                format: "bed",
+                url: bedUrl,
+                color: feature => feature.score > 0.5 ? "red" : "green",
+                displayMode: "EXPANDED"
+            },
+            {
+                name: "Prediction Scores (Wave)",
+                type: "wig",
+                format: "bedgraph",
+                url: bedGraphUrl,
+                color: "blue",
+                autoscale: true,
+                min: 0,
+                max: 1,
+                displayMode: "EXPANDED"
+            }
+        ]
     };
 
-    // === 6. Create browser ===
+    // === 7. Create browser ===
     const igvDiv = document.getElementById("igv-container");
     igvDiv.innerHTML = "";
     igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("New IGV browser created");
-  }
+    console.log("IGV browser loaded with full genome + annotations + predictions");
+}
 </script>
+
 
 <!-- ===================== Cite Us Box ===================== -->
 <div class="cite-box">
