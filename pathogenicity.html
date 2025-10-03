@@ -313,70 +313,80 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
 </style>
 
 <script>
-let igvBrowser = null;
+  let igvBrowser = null;
 
-// Helper: format FASTA with line breaks
-function formatFasta(seq, header, lineLength=60) {
-    let fasta = `>${header}\n`;
-    for (let i = 0; i < seq.length; i += lineLength) {
-        fasta += seq.slice(i, i + lineLength) + "\n";
-    }
-    return fasta;
-}
-
-async function renderGenome(result) {
+  async function renderGenome(predChunks, genomeLength, gffData) {
+    // === 1. Remove old browser if exists ===
     if (igvBrowser) {
-        igv.removeBrowser(igvBrowser);
-        igvBrowser = null;
+      igv.removeBrowser(igvBrowser);
+      igvBrowser = null;
     }
 
-    const dna_sequence = result.sequence;      // Full DNA from backend
-    const gffData = result.annotations_gff;    // Full GFF3 from backend
-    const predChunks = result.chunks || [];    // Optional prediction chunks
-
-    const genomeLength = dna_sequence.length;
-
-    // Use seqid from GFF3 (first non-comment line)
-    const seqid = gffData.split("\n").find(line => line && !line.startsWith("#")).split("\t")[0];
-
-    // BED track for chunks
+    // === 2. BED track for labels (red/green) ===
     let bed = "";
     predChunks.forEach(chunk => {
-        bed += `${seqid}\t${chunk.start}\t${chunk.end}\t.\t${chunk.score}\n`;
+      const label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
+      bed += `virus\t${chunk.start}\t${chunk.end}\t.\t${chunk.score}\n`;
     });
 
-    // BedGraph track
+    // === 3. BedGraph track for probabilities (per-base) ===
     let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
     predChunks.forEach(chunk => {
-        for (let pos = chunk.start; pos < chunk.end; pos++) {
-            bedGraph += `${seqid}\t${pos}\t${pos+1}\t${chunk.score}\n`;
-        }
+      for (let pos = chunk.start; pos < chunk.end; pos++) {
+        bedGraph += `virus\t${pos}\t${pos+1}\t${chunk.score}\n`;
+      }
     });
 
-    // Create object URLs
-    const fastaUrl = URL.createObjectURL(new Blob([formatFasta(dna_sequence, seqid)], { type: "text/plain" }));
-    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
+    // === 4. Create object URLs ===
     const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
     const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
+    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
+    const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
 
-    // IGV configuration
+    // === 5. IGV config ===
     const options = {
-        reference: { id: seqid, name: "Genome", fastaURL: fastaUrl },
-        tracks: [
-            { name: "NCBI Annotations", type: "annotation", format: "gff3", url: gffUrl, displayMode: "EXPANDED" },
-            { name: "Pathogenicity Chunks", type: "annotation", format: "bed", url: bedUrl, color: feature => feature.score > 0.5 ? "red" : "green", displayMode: "EXPANDED" },
-            { name: "Prediction Scores", type: "wig", format: "bedgraph", url: bedGraphUrl, color: "blue", autoscale: true, min: 0, max: 1, displayMode: "EXPANDED" }
-        ]
+      reference: {
+        id: "virus",
+        name: "Virus Genome",
+        fastaURL: fastaUrl
+      },
+      tracks: [
+        {
+          name: "Genome Annotations",
+          type: "annotation",
+          format: "gff3",
+          url: gffUrl,
+          displayMode: "EXPANDED"
+        },
+        {
+          name: "Pathogenicity Predictions",
+          type: "annotation",
+          format: "bed",
+          url: bedUrl,
+          color: feature => feature.score > 0.5 ? "red" : "green",
+          displayMode: "EXPANDED"
+        },
+        {
+          name: "Prediction Scores (Wave)",
+          type: "wig",
+          format: "bedgraph",
+          url: bedGraphUrl,
+          color: "blue",
+          autoscale: true,
+          min: 0,
+          max: 1,
+          displayMode: "EXPANDED"
+        }
+      ]
     };
 
-    // Create IGV browser
+    // === 6. Create browser ===
     const igvDiv = document.getElementById("igv-container");
     igvDiv.innerHTML = "";
     igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("IGV loaded with full genome and annotations");
-}
+    console.log("New IGV browser created");
+  }
 </script>
-
 
 <!-- ===================== Cite Us Box ===================== -->
 <div class="cite-box">
