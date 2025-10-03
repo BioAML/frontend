@@ -260,12 +260,7 @@
       accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
 
       outputBox.style.display = "block";
-      renderGenome(
-      data.result.chunks,
-      data.result.genome_length,
-      data.result.annotations_gff,
-      data.sequence   // <-- pass actual DNA sequence
-    );
+      renderGenome(data.result.chunks, data.result.genome_length, data.result.annotations_gff);
     } catch (error) {
       alert("❌ Network error: " + error.message);
       spinner.style.display = "none";
@@ -320,47 +315,35 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
 <script>
   let igvBrowser = null;
 
-  async function renderGenome(predChunks, genomeLength, gffData, dna_sequence) {
+  async function renderGenome(predChunks, genomeLength, gffData) {
+    // === 1. Remove old browser if exists ===
     if (igvBrowser) {
       igv.removeBrowser(igvBrowser);
       igvBrowser = null;
     }
 
-    // === Fix GFF: force seqid to "virus" ===
-    gffData = gffData
-      .split("\n")
-      .map(line => {
-        if (!line || line.startsWith("#")) return line;
-        const cols = line.split("\t");
-        cols[0] = "virus"; // overwrite seqid
-        return cols.join("\t");
-      })
-      .join("\n");
-
-    // === BED track (use 0-based start) ===
+    // === 2. BED track for labels (red/green) ===
     let bed = "";
     predChunks.forEach(chunk => {
-      const start0 = chunk.start - 1; // BED is 0-based
-      bed += `virus\t${start0}\t${chunk.end}\t.\t${chunk.score}\n`;
+      const label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
+      bed += `virus\t${chunk.start}\t${chunk.end}\t.\t${chunk.score}\n`;
     });
 
-    // === BedGraph track (0-based too) ===
+    // === 3. BedGraph track for probabilities (per-base) ===
     let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
     predChunks.forEach(chunk => {
-      for (let pos = chunk.start - 1; pos < chunk.end; pos++) {
+      for (let pos = chunk.start; pos < chunk.end; pos++) {
         bedGraph += `virus\t${pos}\t${pos+1}\t${chunk.score}\n`;
       }
     });
 
-    // === Blob URLs ===
+    // === 4. Create object URLs ===
     const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
     const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
     const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
-    const fastaUrl = URL.createObjectURL(
-      new Blob([`>virus\n${dna_sequence}`], { type: "text/plain" })   // ✅ use real sequence
-    );
+    const fastaUrl = URL.createObjectURL(new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" }));
 
-    // === IGV options ===
+    // === 5. IGV config ===
     const options = {
       reference: {
         id: "virus",
@@ -373,8 +356,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
           type: "annotation",
           format: "gff3",
           url: gffUrl,
-          displayMode: "EXPANDED",
-          color: "darkgreen"
+          displayMode: "EXPANDED"
         },
         {
           name: "Pathogenicity Predictions",
@@ -398,16 +380,13 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
       ]
     };
 
+    // === 6. Create browser ===
     const igvDiv = document.getElementById("igv-container");
     igvDiv.innerHTML = "";
     igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("IGV browser with annotations + predictions loaded (real sequence used)");
+    console.log("New IGV browser created");
   }
 </script>
-
-
-
-
 
 <!-- ===================== Cite Us Box ===================== -->
 <div class="cite-box">
