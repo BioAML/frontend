@@ -315,11 +315,10 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
 <script>
 let igvBrowser = null;
 
-// Helper to format FASTA nicely
 function formatFasta(seq, header="virus", lineLength=60) {
     let fasta = `>${header}\n`;
-    for (let i=0; i<seq.length; i+=lineLength){
-        fasta += seq.slice(i, i+lineLength) + "\n";
+    for (let i = 0; i < seq.length; i += lineLength) {
+        fasta += seq.slice(i, i + lineLength) + "\n";
     }
     return fasta;
 }
@@ -331,38 +330,46 @@ async function renderGenome(result) {
     }
 
     const dna_sequence = result.sequence;
-    const gffData = result.annotations_gff;
+    let gffData = result.annotations_gff;
     const predChunks = result.chunks || [];
 
-    // Extract seqid from GFF3
-    const firstLine = gffData.split("\n").find(line => line && !line.startsWith("#"));
-    const seqid = firstLine ? firstLine.split("\t")[0] : "virus";
+    // === Force reference name to "virus" everywhere ===
+    const refName = "virus";
+    gffData = gffData
+        .split("\n")
+        .map(line => {
+            if (!line || line.startsWith("#")) return line;
+            const cols = line.split("\t");
+            cols[0] = refName; // overwrite seqid column
+            return cols.join("\t");
+        })
+        .join("\n");
 
-    // BED track for chunks (0-based)
+    // BED track (0-based)
     let bed = "";
     predChunks.forEach(chunk => {
-        const start0 = chunk.start - 1; // BED is 0-based
-        bed += `${seqid}\t${start0}\t${chunk.end}\t.\t${chunk.score}\n`;
+        const start0 = chunk.start - 1;
+        bed += `${refName}\t${start0}\t${chunk.end}\t.\t${chunk.score}\n`;
     });
 
-    // BedGraph track for per-base scores (0-based)
+    // BedGraph track (0-based)
     let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
     predChunks.forEach(chunk => {
-        for(let i=chunk.start-1; i<chunk.end; i++){
-            bedGraph += `${seqid}\t${i}\t${i+1}\t${chunk.score}\n`;
+        for (let i = chunk.start - 1; i < chunk.end; i++) {
+            bedGraph += `${refName}\t${i}\t${i + 1}\t${chunk.score}\n`;
         }
     });
 
     // Object URLs
-    const fastaUrl = URL.createObjectURL(new Blob([formatFasta(dna_sequence, seqid)], {type:"text/plain"}));
-    const gffUrl = URL.createObjectURL(new Blob([gffData], {type:"text/plain"}));
-    const bedUrl = URL.createObjectURL(new Blob([bed], {type:"text/plain"}));
-    const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], {type:"text/plain"}));
+    const fastaUrl = URL.createObjectURL(new Blob([formatFasta(dna_sequence, refName)], { type: "text/plain" }));
+    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
+    const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
+    const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
 
     const options = {
         reference: {
-            id: seqid,
-            name: "Genome",
+            id: refName,
+            name: "Virus Genome",
             fastaURL: fastaUrl
         },
         tracks: [
@@ -372,7 +379,7 @@ async function renderGenome(result) {
                 format: "gff3",
                 url: gffUrl,
                 displayMode: "EXPANDED",
-                color: "darkgreen" // force a visible color
+                color: "darkgreen"
             },
             {
                 name: "Pathogenicity Predictions",
@@ -395,11 +402,12 @@ async function renderGenome(result) {
     };
 
     const igvDiv = document.getElementById("igv-container");
-    igvDiv.innerHTML = ""; // clear old browser
+    igvDiv.innerHTML = "";
     igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("IGV browser loaded with full genome and annotations");
+    console.log("IGV browser loaded with annotations + predictions");
 }
 </script>
+
 
 
 <!-- ===================== Cite Us Box ===================== -->
