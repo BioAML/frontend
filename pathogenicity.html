@@ -326,7 +326,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
     let bed = "";
     predChunks.forEach(chunk => {
       const label = chunk.label.toLowerCase() === "pathogenic" ? "pathogenic" : "nonpathogenic";
-      bed += `virus\t${chunk.start}\t${chunk.end}\t${label}\t${chunk.score}\n`;
+      bed += `virus\t${chunk.start}\t${chunk.end}\t.\t${chunk.score}\n`;
     });
 
     // === 3. BedGraph track for probabilities (per-base) ===
