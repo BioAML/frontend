@@ -337,18 +337,37 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
       })
       .join("\n");
 
-    // === BED track (use 0-based start) ===
-    let bed = "";
+    // === Merge contiguous chunks with same class ===
+    let merged = [];
+    let current = null;
+
     predChunks.forEach(chunk => {
-      const start0 = chunk.start - 1; // BED is 0-based
-      bed += `virus\t${start0}\t${chunk.end}\t.\t${chunk.score}\n`;
+      const cls = chunk.score > 0.5 ? 1 : 0; // 1=red, 0=green
+      if (!current) {
+        current = { start: chunk.start, end: chunk.end, cls, score: chunk.score };
+      } else if (cls === current.cls && chunk.start === current.end) {
+        // extend contiguous block
+        current.end = chunk.end;
+        current.score = (current.score + chunk.score) / 2; // average score
+      } else {
+        merged.push(current);
+        current = { start: chunk.start, end: chunk.end, cls, score: chunk.score };
+      }
+    });
+    if (current) merged.push(current);
+
+    // === BED track (continuous blocks) ===
+    let bed = "";
+    merged.forEach(block => {
+      const start0 = block.start - 1; // BED is 0-based
+      bed += `virus\t${start0}\t${block.end}\t.\t${block.score}\n`;
     });
 
-    // === BedGraph track (0-based too) ===
+    // === BedGraph track (wave) ===
     let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
     predChunks.forEach(chunk => {
       for (let pos = chunk.start - 1; pos < chunk.end; pos++) {
-        bedGraph += `virus\t${pos}\t${pos+1}\t${chunk.score}\n`;
+        bedGraph += `virus\t${pos}\t${pos + 1}\t${chunk.score}\n`;
       }
     });
 
@@ -357,7 +376,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
     const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
     const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
     const fastaUrl = URL.createObjectURL(
-      new Blob([`>virus\n${dna_sequence}`], { type: "text/plain" })   // ✅ use real sequence
+      new Blob([`>virus\n${dna_sequence}`], { type: "text/plain" })
     );
 
     // === IGV options ===
@@ -401,9 +420,10 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
     const igvDiv = document.getElementById("igv-container");
     igvDiv.innerHTML = "";
     igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("IGV browser with annotations + predictions loaded (real sequence used)");
+    console.log("✅ IGV loaded with merged blocks, no white gaps between chunks");
   }
 </script>
+
 
 
 
