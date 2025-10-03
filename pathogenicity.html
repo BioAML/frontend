@@ -320,7 +320,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
 <script>
   let igvBrowser = null;
 
-  async function renderGenome(predChunks, genomeLength, gffData, dna_sequence) {
+  async function renderGenome(predChunks, genomeLength, gffData, dnaSequence) {
     if (igvBrowser) {
       igv.removeBrowser(igvBrowser);
       igvBrowser = null;
@@ -332,22 +332,21 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
       .map(line => {
         if (!line || line.startsWith("#")) return line;
         const cols = line.split("\t");
-        cols[0] = "virus"; // overwrite seqid
+        cols[0] = "virus"; 
         return cols.join("\t");
       })
       .join("\n");
 
-    // === BED track (use 0-based start) ===
+    // === BED track (NO -1 now) ===
     let bed = "";
     predChunks.forEach(chunk => {
-      const start0 = chunk.start - 1; // BED is 0-based
-      bed += `virus\t${start0}\t${chunk.end}\t.\t${chunk.score}\n`;
+      bed += `virus\t${chunk.start}\t${chunk.end}\t.\t${chunk.score}\n`;
     });
 
-    // === BedGraph track (0-based too) ===
+    // === BedGraph track (still 0-based) ===
     let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
     predChunks.forEach(chunk => {
-      for (let pos = chunk.start - 1; pos < chunk.end; pos++) {
+      for (let pos = chunk.start; pos < chunk.end; pos++) {
         bedGraph += `virus\t${pos}\t${pos+1}\t${chunk.score}\n`;
       }
     });
@@ -357,7 +356,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
     const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
     const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
     const fastaUrl = URL.createObjectURL(
-      new Blob([`>virus\n${dna_sequence}`], { type: "text/plain" })   // ✅ use real sequence
+      new Blob([`>virus\n${dnaSequence}`], { type: "text/plain" })
     );
 
     // === IGV options ===
@@ -401,9 +400,10 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
     const igvDiv = document.getElementById("igv-container");
     igvDiv.innerHTML = "";
     igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("IGV browser with annotations + predictions loaded (real sequence used)");
+    console.log("IGV browser with annotations + predictions loaded");
   }
 </script>
+
 
 
 
