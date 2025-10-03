@@ -318,91 +318,138 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
 </style>
 
 <script>
-  let igvBrowser = null;
+let igvBrowser = null;
 
-  async function renderGenome(predChunks, genomeLength, gffData, dnaSequence) {
-    if (igvBrowser) {
-      igv.removeBrowser(igvBrowser);
-      igvBrowser = null;
-    }
-
-    // === Fix GFF: force seqid to "virus" ===
-    gffData = gffData
-      .split("\n")
-      .map(line => {
-        if (!line || line.startsWith("#")) return line;
-        const cols = line.split("\t");
-        cols[0] = "virus"; 
-        return cols.join("\t");
-      })
-      .join("\n");
-
-    // === BED track (NO -1 now) ===
-    let bed = "";
-    predChunks.forEach(chunk => {
-      bed += `virus\t${chunk.start}\t${chunk.end}\t.\t${chunk.score}\n`;
-    });
-
-    // === BedGraph track (still 0-based) ===
-    let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
-    predChunks.forEach(chunk => {
-      for (let pos = chunk.start; pos < chunk.end; pos++) {
-        bedGraph += `virus\t${pos}\t${pos+1}\t${chunk.score}\n`;
-      }
-    });
-
-    // === Blob URLs ===
-    const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
-    const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
-    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
-    const fastaUrl = URL.createObjectURL(
-      new Blob([`>virus\n${dnaSequence}`], { type: "text/plain" })
-    );
-
-    // === IGV options ===
-    const options = {
-      reference: {
-        id: "virus",
-        name: "Virus Genome",
-        fastaURL: fastaUrl
-      },
-      tracks: [
-        {
-          name: "Genome Annotations",
-          type: "annotation",
-          format: "gff3",
-          url: gffUrl,
-          displayMode: "EXPANDED",
-          color: "darkgreen"
-        },
-        {
-          name: "Pathogenicity Predictions",
-          type: "annotation",
-          format: "bed",
-          url: bedUrl,
-          color: feature => feature.score > 0.5 ? "red" : "green",
-          displayMode: "EXPANDED"
-        },
-        {
-          name: "Prediction Scores (Wave)",
-          type: "wig",
-          format: "bedgraph",
-          url: bedGraphUrl,
-          color: "blue",
-          autoscale: true,
-          min: 0,
-          max: 1,
-          displayMode: "EXPANDED"
-        }
-      ]
-    };
-
-    const igvDiv = document.getElementById("igv-container");
-    igvDiv.innerHTML = "";
-    igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("IGV browser with annotations + predictions loaded");
+// Helper: wrap FASTA into ~60bp lines
+function formatFasta(seq, header, lineLength = 60) {
+  let out = `>${header}\n`;
+  for (let i = 0; i < seq.length; i += lineLength) {
+    out += seq.slice(i, i + lineLength) + "\n";
   }
+  return out;
+}
+
+async function renderGenome(predChunks, genomeLength, gffData, dnaSequence) {
+  // remove old browser if any
+  if (igvBrowser) {
+    try { igv.removeBrowser(igvBrowser); } catch (e) { /* ignore */ }
+    igvBrowser = null;
+  }
+
+  // safety defaults
+  predChunks = Array.isArray(predChunks) ? predChunks.slice() : [];
+  gffData = typeof gffData === "string" ? gffData : "";
+  dnaSequence = typeof dnaSequence === "string" ? dnaSequence : (new Array(genomeLength+1).join("N"));
+
+  // 1) Deduplicate chunks by start-end
+  const seen = new Set();
+  const uniqueChunks = [];
+  for (const c of predChunks) {
+    const s = Number(c.start);
+    const e = Number(c.end);
+    if (Number.isNaN(s) || Number.isNaN(e)) continue;
+    const key = `${s}-${e}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueChunks.push({ start: s, end: e, score: Number(c.score ?? 0) });
+    }
+  }
+  predChunks = uniqueChunks;
+
+  // 2) Figure out seqid from GFF (first non-comment line)
+  let seqid = "virus";
+  const firstLine = gffData.split("\n").find(line => line && !line.startsWith("#"));
+  if (firstLine) {
+    const cols = firstLine.split("\t");
+    if (cols.length >= 1 && cols[0].trim() !== "") seqid = cols[0].trim();
+  }
+
+  // 3) Detect whether incoming chunks appear 0-based (min start === 0) or 1-based
+  let zeroBased = true;
+  if (predChunks.length > 0) {
+    const minStart = Math.min(...predChunks.map(c => c.start));
+    // if minStart === 0 -> likely already 0-based; if minStart >= 1 -> likely 1-based
+    zeroBased = (minStart === 0);
+  }
+
+  // 4) Build BED (one row per chunk) — BED expects 0-based start, end is exclusive
+  //    If chunks are 1-based inclusive, convert start -> start-1 and leave end as-is.
+  let bedText = "";
+  for (const c of predChunks) {
+    const start0 = zeroBased ? c.start : (c.start - 1);
+    const end0 = c.end; // assume end is exclusive if original algorithm used i..i+chunk_size
+    bedText += `${seqid}\t${start0}\t${end0}\t.\t${c.score}\n`;
+  }
+
+  // 5) Build chunk-level BedGraph (one line per chunk): start end score
+  //    This keeps the wave but avoids enormous per-base expansion.
+  let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
+  for (const c of predChunks) {
+    const start0 = zeroBased ? c.start : (c.start - 1);
+    const end0 = c.end;
+    bedGraph += `${seqid}\t${start0}\t${end0}\t${c.score}\n`;
+  }
+
+  // 6) Create Blob URLs (FASTA uses the seqid found in the GFF to ensure mapping)
+  const fastaText = formatFasta(dnaSequence, seqid);
+  const fastaUrl = URL.createObjectURL(new Blob([fastaText], { type: "text/plain" }));
+  const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
+  const bedUrl = URL.createObjectURL(new Blob([bedText], { type: "text/plain" }));
+  const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
+
+  // 7) Color function - robust to strings / missing values
+  function colorByScore(feature) {
+    // feature.score should be numeric or string; try to coerce
+    const s = Number(feature.score ?? feature.value ?? feature.name ?? 0);
+    return (s > 0.5) ? "red" : "green";
+  }
+
+  // 8) IGV options (keeps your order: GFF3, BED blocks, BedGraph wave)
+  const options = {
+    reference: {
+      id: seqid,
+      name: "Genome",
+      fastaURL: fastaUrl
+    },
+    tracks: [
+      {
+        name: "Genome Annotations",
+        type: "annotation",
+        format: "gff3",
+        url: gffUrl,
+        displayMode: "EXPANDED",
+        color: "darkgreen"
+      },
+      {
+        name: "Pathogenicity Predictions",
+        type: "annotation",
+        format: "bed",
+        url: bedUrl,
+        displayMode: "EXPANDED",
+        color: colorByScore
+      },
+      {
+        name: "Prediction Scores (Wave)",
+        type: "wig",
+        format: "bedgraph",
+        url: bedGraphUrl,
+        color: "blue",
+        autoscale: true,
+        min: 0,
+        max: 1,
+        displayMode: "EXPANDED"
+      }
+    ]
+  };
+
+  // 9) Create IGV browser
+  const igvDiv = document.getElementById("igv-container");
+  igvDiv.innerHTML = "";
+  igvBrowser = await igv.createBrowser(igvDiv, options);
+  console.log("IGV loaded (deduped chunks, robust coords, fasta from sequence)");
+}
 </script>
+
 
 
 
