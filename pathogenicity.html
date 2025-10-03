@@ -260,7 +260,12 @@
       accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
 
       outputBox.style.display = "block";
-      renderGenome(data.result.chunks, data.result.genome_length, data.result.annotations_gff);
+      renderGenome(
+      data.result.chunks,
+      data.result.genome_length,
+      data.result.annotations_gff,
+      data.sequence   // <-- pass actual DNA sequence
+    );
     } catch (error) {
       alert("❌ Network error: " + error.message);
       spinner.style.display = "none";
@@ -315,7 +320,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
 <script>
   let igvBrowser = null;
 
-  async function renderGenome(predChunks, genomeLength, gffData) {
+  async function renderGenome(predChunks, genomeLength, gffData, dna_sequence) {
     if (igvBrowser) {
       igv.removeBrowser(igvBrowser);
       igvBrowser = null;
@@ -352,7 +357,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
     const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
     const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
     const fastaUrl = URL.createObjectURL(
-      new Blob([`>virus\n${"N".repeat(genomeLength)}`], { type: "text/plain" })
+      new Blob([`>virus\n${dna_sequence}`], { type: "text/plain" })   // ✅ use real sequence
     );
 
     // === IGV options ===
@@ -396,9 +401,10 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
     const igvDiv = document.getElementById("igv-container");
     igvDiv.innerHTML = "";
     igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("IGV browser with annotations + predictions loaded");
+    console.log("IGV browser with annotations + predictions loaded (real sequence used)");
   }
 </script>
+
 
 
 
