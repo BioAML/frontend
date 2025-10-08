@@ -90,125 +90,101 @@
   </footer>
 
   <!-- JavaScript for Image Handling and API Call -->
-  <script type="module">
-    import { Client, handle_file } from 'https://cdn.jsdelivr.net/npm/@gradio/client@0.9.0/+esm';
+<script type="module">
+  import { client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client@1.7.0/+esm";
 
-    window.addEventListener('DOMContentLoaded', async () => {
-      const dropzone = document.getElementById('dropzone');
-      const imageInput = document.getElementById('imageInput');
-      const uploadBtn = document.getElementById('uploadBtn');
-      const originalImage = document.getElementById('originalImage');
-      const resultImage = document.getElementById('resultImage');
-      const status = document.getElementById('status');
-      const grade = document.getElementById('grade');
-      const alphaInput = document.getElementById('alphaInput');
-      const alphaValue = document.getElementById('alphaValue');
-      const resultsSection = document.getElementById('results');
+  window.addEventListener("DOMContentLoaded", async () => {
+    const dropzone = document.getElementById("dropzone");
+    const imageInput = document.getElementById("imageInput");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const originalImage = document.getElementById("originalImage");
+    const resultImage = document.getElementById("resultImage");
+    const status = document.getElementById("status");
+    const grade = document.getElementById("grade");
+    const alphaInput = document.getElementById("alphaInput");
+    const alphaValue = document.getElementById("alphaValue");
+    const resultsSection = document.getElementById("results");
 
-      // Update alpha value display
-      alphaInput.addEventListener('input', () => {
-        alphaValue.textContent = alphaInput.value;
-      });
+    // Update alpha value display
+    alphaInput.addEventListener("input", () => {
+      alphaValue.textContent = alphaInput.value;
+    });
 
-      // Trigger file input click when button is clicked
-      uploadBtn.addEventListener('click', () => imageInput.click());
+    uploadBtn.addEventListener("click", () => imageInput.click());
+    imageInput.addEventListener("change", (e) => handleImage(e.target.files[0]));
 
-      // Handle file input
-      imageInput.addEventListener('change', (e) => {
-        handleImage(e.target.files[0]);
-      });
+    // Drag and drop
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith("image/")) handleImage(file);
+    });
 
-      // Handle drag and drop
-      dropzone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropzone.classList.add('dragover');
-      });
-
-      dropzone.addEventListener('dragleave', () => {
-        dropzone.classList.remove('dragover');
-      });
-
-      dropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('dragover');
-        const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) {
-          handleImage(file);
-        }
-      });
-
-      // Handle paste from clipboard
-      document.addEventListener('paste', (e) => {
-        const items = e.clipboardData.items;
-        for (let item of items) {
-          if (item.type.startsWith('image')) {
-            const file = item.getAsFile();
-            handleImage(file);
-            break;
-          }
-        }
-      });
-
-      // Process and send image to API
-      async function handleImage(file) {
-        if (!file) {
-          alert("Please select an image first!");
-          return;
-        }
-
-        // Display original image
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          originalImage.src = e.target.result;
-          resultsSection.classList.remove('hidden');
-          predict(file);
-        };
-        reader.readAsDataURL(file);
-      }
-
-      async function predict(file) {
-        status.textContent = '⏳ Processing image...';
-        grade.textContent = '';
-        resultImage.style.display = 'none';
-
-        try {
-          // Connect to Gradio Space
-          const app = await Client.connect('https://rajaatif786-ai4stenosis.hf.space');
-
-          // Process file with handle_file
-          const processedFile = handle_file(file);
-
-          // Call the //predict_image endpoint with processed file and alpha
-          const result = await app.predict('//predict_image', [
-            processedFile, // Processed file, equivalent to handle_file
-            parseFloat(alphaInput.value) // Alpha value
-          ]);
-
-          console.log('API Response:', result);
-
-          // Handle Gradio response with fallbacks
-          let base64Image, stenosisLabel;
-          if (result.data && Array.isArray(result.data)) {
-            base64Image = result.data[0]; // Base64-encoded image
-            stenosisLabel = result.data[1]?.label || result.data[1]; // Gradio Label or fallback
-          } else if (result.overlaid_image && result.grade) {
-            base64Image = result.overlaid_image;
-            stenosisLabel = result.grade;
-          } else {
-            throw new Error('Unexpected response format');
-          }
-
-          resultImage.src = base64Image;
-          resultImage.style.display = 'block';
-          grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
-          status.textContent = '✅ Analysis complete';
-        } catch (error) {
-          console.error('Prediction Error:', error);
-          status.textContent = `❌ Error processing image: ${error.message || 'Unknown error'}`;
+    // Paste
+    document.addEventListener("paste", (e) => {
+      for (let item of e.clipboardData.items) {
+        if (item.type.startsWith("image")) {
+          handleImage(item.getAsFile());
+          break;
         }
       }
     });
-  </script>
+
+    async function handleImage(file) {
+      if (!file) {
+        alert("Please select an image first!");
+        return;
+      }
+
+      // Display image
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        originalImage.src = e.target.result;
+        resultsSection.classList.remove("hidden");
+        predict(file);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function predict(file) {
+      status.textContent = "⏳ Processing image...";
+      grade.textContent = "";
+      resultImage.style.display = "none";
+
+      try {
+        // Connect to your Gradio Space
+        const app = await client("https://rajaatif786-ai4stenosis.hf.space");
+        const processedFile = await handle_file(file);
+
+        // Call endpoint
+        const result = await app.predict("/predict_image", [
+          processedFile,
+          parseFloat(alphaInput.value)
+        ]);
+
+        console.log("API Response:", result);
+
+        // Parse output
+        let base64Image = result.data?.[0];
+        let stenosisLabel = result.data?.[1]?.label || result.data?.[1];
+
+        resultImage.src = base64Image;
+        resultImage.style.display = "block";
+        grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
+        status.textContent = "✅ Analysis complete";
+      } catch (error) {
+        console.error("Prediction Error:", error);
+        status.textContent = `❌ Error processing image: ${error.message || "Unknown error"}`;
+      }
+    }
+  });
+</script>
 
   <!-- Animation Keyframes -->
   <style>
