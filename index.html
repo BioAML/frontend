@@ -22,7 +22,6 @@
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
-  <!-- Header Section -->
   <header class="relative h-screen gradient-bg text-white flex flex-col justify-center items-center text-center">
     <video autoplay muted loop class="absolute inset-0 w-full h-full object-cover opacity-50">
       <source src="background.mp4" type="video/mp4">
@@ -31,16 +30,17 @@
     <div class="relative z-10">
       <h1 class="text-5xl md:text-7xl font-bold mb-4 animate-fade-in">Welcome to BioAML</h1>
       <p class="text-xl md:text-2xl mb-8">AI-Driven Solutions for Biology, Genomics, Agriculture, and Health</p>
-      <a href="#modules" class="bg-white text-blue-600 px-6 py-3 rounded-full font-semibold hover:bg-blue-100 transition duration-300">Explore Modules</a>
+      <div class="flex justify-center space-x-4">
+        <a href="#modules" class="bg-white text-blue-600 px-6 py-3 rounded-full font-semibold hover:bg-blue-100 transition duration-300">Explore Modules</a>
+        <a href="#pricing" class="bg-transparent border-2 border-white text-white px-6 py-3 rounded-full font-semibold hover:bg-white hover:text-blue-600 transition duration-300">Pricing</a>
+      </div>
     </div>
   </header>
 
-  <!-- Modules Section -->
   <section id="modules" class="py-16 bg-white">
     <div class="container mx-auto px-4">
       <h2 class="text-4xl font-bold text-center mb-12">Our AI Modules</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- Genomics Category -->
         <div class="bg-blue-50 p-6 rounded-lg shadow-lg hover-scale">
           <div class="flex items-center mb-4">
             <span class="text-4xl mr-4">🧬</span>
@@ -54,7 +54,6 @@
           <a href="#genomics" class="mt-4 inline-block text-blue-600 font-semibold hover:underline">Learn More</a>
         </div>
 
-        <!-- Medical Imagery Category -->
         <div class="bg-green-50 p-6 rounded-lg shadow-lg hover-scale">
           <div class="flex items-center mb-4">
             <span class="text-4xl mr-4">🩺</span>
@@ -71,14 +70,12 @@
     </div>
   </section>
 
-  <!-- Footer Section -->
   <footer class="bg-gray-800 text-white py-6">
     <div class="container mx-auto text-center">
       <p>&copy; 2025 BioAML. All rights reserved.</p>
     </div>
   </footer>
 
-  <!-- Animation Keyframes -->
   <style>
     @keyframes fade-in {
       from { opacity: 0; transform: translateY(20px); }
