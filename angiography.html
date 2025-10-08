@@ -165,7 +165,7 @@
 
     async function predict(file) {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('data', file);  // Changed to 'data' for Gradio compatibility
       formData.append('alpha', alphaInput.value);
 
       status.textContent = '⏳ Processing image...';
@@ -173,7 +173,7 @@
       resultImage.style.display = 'none';
 
       try {
-        // Replace with your Hugging Face Space API URL
+        // Updated API URL for your Space with /predict_image
         const API_URL = 'https://rajaatif786-ai4stenosis.hf.space/predict_image';
         const response = await fetch(API_URL, {
           method: 'POST',
@@ -187,14 +187,17 @@
         const result = await response.json();
         console.log(result);
 
-        // Handle API response
-        resultImage.src = result.overlaid_image;
+        // Handle Gradio response format
+        const base64Image = result.data[0];
+        const stenosisLabel = result.data[1].label;
+
+        resultImage.src = base64Image;
         resultImage.style.display = 'block';
-        grade.textContent = `🩸 Stenosis Grade: ${result.grade}`;
+        grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
         status.textContent = '✅ Analysis complete';
       } catch (error) {
         console.error(error);
-        status.textContent = '❌ Error processing image';
+        status.textContent = '❌ Error processing image. Check console for details.';
       }
     }
   </script>
