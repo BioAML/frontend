@@ -215,7 +215,7 @@ async function predict(file) {
     // call named endpoint, fallback to index 0
     let result;
     try {
-      result = await app.predict("/predict_image", [processedFile, parseFloat(alphaInput.value)]);
+      result = await app.predict("//predict_image", [processedFile, parseFloat(alphaInput.value)]);
     } catch (e) {
       result = await app.predict(0, [processedFile, parseFloat(alphaInput.value)]);
     }
