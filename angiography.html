@@ -6,7 +6,6 @@
   <title>BioAML - Angiography Stenosis Prediction</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@gradio/client@latest/dist/index.min.js"></script>
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -91,6 +90,7 @@
   </footer>
 
   <!-- JavaScript for Image Handling and API Call -->
+  <script src="https://unpkg.com/@gradio/client@0.13.0/dist/index.min.js" defer></script>
   <script>
     const dropzone = document.getElementById('dropzone');
     const imageInput = document.getElementById('imageInput');
@@ -170,12 +170,17 @@
       resultImage.style.display = 'none';
 
       try {
+        // Check if GradioClient is available
+        if (typeof window.GradioClient === 'undefined') {
+          throw new Error('GradioClient library not loaded');
+        }
+
         // Connect to Gradio Space
-        const app = await gradio.client('https://rajaatif786-ai4stenosis.hf.space');
+        const app = await window.GradioClient('https://rajaatif786-ai4stenosis.hf.space');
 
         // Call the /predict_image endpoint with file and alpha
-        const result = await app.predict('//predict_image', [
-          file, // File object, equivalent to handle_file
+        const result = await app.predict('/predict_image', [
+          file, // File object
           parseFloat(alphaInput.value) // Alpha value
         ]);
 
