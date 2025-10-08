@@ -90,9 +90,10 @@
   </footer>
 
   <!-- JavaScript for Image Handling and API Call -->
-  <script src="https://unpkg.com/@gradio/client@0.12.0/dist/index.min.js" defer></script>
-  <script>
-    window.onload = function () {
+  <script type="module">
+    import { Client, handle_file } from 'https://cdn.skypack.dev/@gradio/client@0.12.0';
+
+    window.addEventListener('DOMContentLoaded', async () => {
       const dropzone = document.getElementById('dropzone');
       const imageInput = document.getElementById('imageInput');
       const uploadBtn = document.getElementById('uploadBtn');
@@ -149,7 +150,7 @@
       });
 
       // Process and send image to API
-      function handleImage(file) {
+      async function handleImage(file) {
         if (!file) {
           alert("Please select an image first!");
           return;
@@ -171,18 +172,13 @@
         resultImage.style.display = 'none';
 
         try {
-          // Check if GradioClient is available
-          if (typeof window.GradioClient === 'undefined') {
-            throw new Error('GradioClient library not loaded. Check console for network errors.');
-          }
-
           // Connect to Gradio Space
-          const app = await window.GradioClient.connect('https://rajaatif786-ai4stenosis.hf.space');
+          const app = await Client.connect('https://rajaatif786-ai4stenosis.hf.space');
 
           // Process file with handle_file
-          const processedFile = window.GradioClient.handle_file(file);
+          const processedFile = handle_file(file);
 
-          // Call the /predict_image endpoint with processed file and alpha
+          // Call the //predict_image endpoint with processed file and alpha
           const result = await app.predict('//predict_image', [
             processedFile, // Processed file, equivalent to handle_file
             parseFloat(alphaInput.value) // Alpha value
@@ -211,7 +207,7 @@
           status.textContent = `❌ Error processing image: ${error.message || 'Unknown error'}`;
         }
       }
-    };
+    });
   </script>
 
   <!-- Animation Keyframes -->
