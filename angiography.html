@@ -157,50 +157,110 @@ async function predict(file) {
   grade.textContent = "";
   resultImage.style.display = "none";
 
+  // Helper: convert various returned image formats to a URL usable as <img>.src
+  async function toImageURL(imgData) {
+    // 1) null/undefined
+    if (!imgData) throw new Error("No image data provided");
+
+    // 2) If it's already a data URI string or an HTTP URL
+    if (typeof imgData === "string") {
+      const s = imgData.trim();
+      if (s.startsWith("data:image/")) return s;
+      if (s.startsWith("http://") || s.startsWith("https://")) return s;
+      // if it's a raw base64 string without prefix
+      if (/^[A-Za-z0-9+/=\s]+$/.test(s)) return "data:image/png;base64," + s;
+      throw new Error("String image data not recognized");
+    }
+
+    // 3) If it's a Blob / File
+    if (imgData instanceof Blob) {
+      return URL.createObjectURL(imgData);
+    }
+
+    // 4) If it's an ArrayBuffer or TypedArray
+    if (imgData instanceof ArrayBuffer || ArrayBuffer.isView(imgData)) {
+      const u8 = imgData instanceof ArrayBuffer ? new Uint8Array(imgData) : new Uint8Array(imgData.buffer || imgData);
+      const blob = new Blob([u8], { type: "image/png" });
+      return URL.createObjectURL(blob);
+    }
+
+    // 5) If it's an object like { image: "data:image/..." }
+    if (typeof imgData === "object") {
+      if (imgData.image && typeof imgData.image === "string") {
+        return imgData.image;
+      }
+      // case: { data: [number, number, ...], mime: "image/png" } or { data: Uint8Array }
+      if (imgData.data) {
+        const data = imgData.data;
+        if (typeof data === "string") {
+          // base64 in .data
+          const prefix = imgData.mime ? `data:${imgData.mime};base64,` : "data:image/png;base64,";
+          return prefix + data;
+        }
+        if (Array.isArray(data) || ArrayBuffer.isView(data)) {
+          const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+          const blob = new Blob([u8], { type: imgData.mime || "image/png" });
+          return URL.createObjectURL(blob);
+        }
+      }
+    }
+
+    throw new Error("Unsupported image data type: " + Object.prototype.toString.call(imgData));
+  }
+
   try {
-    // Connect to your Gradio Space
     const app = await client("https://rajaatif786-ai4stenosis.hf.space");
     const processedFile = await handle_file(file);
 
-    // Try named endpoint first
+    // call named endpoint, fallback to index 0
     let result;
     try {
-      result = await app.predict("//predict_image", [
-        processedFile,
-        parseFloat(alphaInput.value)
-      ]);
-    } catch {
-      // Fallback if no named endpoint
-      result = await app.predict(0, [
-        processedFile,
-        parseFloat(alphaInput.value)
-      ]);
+      result = await app.predict("/predict_image", [processedFile, parseFloat(alphaInput.value)]);
+    } catch (e) {
+      result = await app.predict(0, [processedFile, parseFloat(alphaInput.value)]);
     }
 
-    console.log("API Response:", result);
+    console.log("🔍 Full API Response:", result);
 
-    // ✅ Normalize Gradio response
-    let base64Image = result?.data?.[0];
-    let stenosisLabel = result?.data?.[1]?.label || result?.data?.[1];
+    // Extract candidate image payload from known places
+    // (try the fields you might receive)
+    let rawImageCandidate =
+      result?.data?.[0] ??            // common: ['data:image/...', {label:...}]
+      result?.overlaid_image ??      // some custom outputs
+      result?.image ??               // some formats
+      result;                        // as last resort the whole object
 
-    // Some Gradio versions return { image: "data:image/png;base64,..."}
-    if (base64Image && typeof base64Image === "object" && base64Image.image) {
-      base64Image = base64Image.image;
-    }
+    // Also extract label safely
+    let stenosisLabel = result?.data?.[1]?.label || result?.data?.[1] || result?.grade || result?.label || "Unknown";
 
-    // ✅ Ensure we have a valid base64 URI
-    if (base64Image && base64Image.startsWith("data:image")) {
-      resultImage.src = base64Image;
+    // Convert to usable URL (handles strings, blobs, byte arrays, objects)
+    const imageURL = await toImageURL(rawImageCandidate);
+
+    // If we created a blob URL, remember to revoke it later
+    const isBlobURL = imageURL.startsWith("blob:");
+
+    // Set image and show it when loaded
+    resultImage.onload = () => {
       resultImage.style.display = "block";
-    } else {
-      throw new Error("Invalid image data returned from API");
-    }
+      status.textContent = "✅ Analysis complete";
+      grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
+      // revoke blob url to free memory
+      if (isBlobURL) URL.revokeObjectURL(imageURL);
+    };
+    resultImage.onerror = (ev) => {
+      console.error("Result image failed to load", ev);
+      status.textContent = "❌ Failed to display returned image";
+    };
 
-    grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
-    status.textContent = "✅ Analysis complete";
+    resultImage.src = imageURL;
   } catch (error) {
     console.error("Prediction Error:", error);
-    status.textContent = `❌ Error processing image: ${error.message || "Unknown error"}`;
+    // If the error came from unknown returned shape, print full result for debugging
+    if (error && error.message && error.message.includes("Unsupported image data type")) {
+      status.textContent = `❌ Invalid image format returned: ${error.message}`;
+    } else {
+      status.textContent = `❌ Error: ${error.message || "Unknown error"}`;
+    }
   }
 }
   });
