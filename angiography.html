@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioAML - Angiography Stenosis Prediction</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .hover-scale {
+      transition: transform 0.3s ease-in-out;
+    }
+    .hover-scale:hover {
+      transform: scale(1.05);
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+    }
+    .dropzone {
+      border: 2px dashed #10b981;
+      transition: border-color 0.3s ease;
+    }
+    .dropzone.dragover {
+      border-color: #3b82f6;
+      background-color: #e6f3ff;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <!-- Header Section -->
+  <header class="relative h-64 gradient-bg text-white flex flex-col justify-center items-center text-center">
+    <div class="relative z-10">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4 animate-fade-in">Angiography Stenosis Prediction</h1>
+      <p class="text-lg md:text-xl">Upload or paste an angiography image to predict stenosis</p>
+    </div>
+  </header>
+
+  <!-- Image Input Section -->
+  <section class="py-16 bg-white">
+    <div class="container mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center mb-8">Upload or Paste Image</h2>
+      <div class="max-w-lg mx-auto">
+        <div id="dropzone" class="dropzone p-8 bg-green-50 rounded-lg shadow-lg text-center hover-scale">
+          <p class="text-gray-600 mb-4">Drag and drop an image here, or click to upload, or paste from clipboard</p>
+          <input type="file" id="imageInput" accept="image/*" class="hidden">
+          <button id="uploadBtn" class="bg-green-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-green-700 transition duration-300">Select Image</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results Section -->
+  <section id="results" class="py-16 bg-gray-100 hidden">
+    <div class="container mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center mb-12">Prediction Results</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <!-- Original Image -->
+        <div class="bg-white p-6 rounded-lg shadow-lg hover-scale">
+          <h3 class="text-xl font-semibold text-green-600 mb-4">Original Image</h3>
+          <img id="originalImage" class="w-full h-auto rounded-lg" alt="Original Angiography Image">
+        </div>
+        <!-- Overlayed Mask -->
+        <div class="bg-white p-6 rounded-lg shadow-lg hover-scale">
+          <h3 class="text-xl font-semibold text-green-600 mb-4">Overlayed Mask</h3>
+          <canvas id="maskCanvas" class="w-full h-auto rounded-lg"></canvas>
+        </div>
+      </div>
+      <!-- Grading Score -->
+      <div class="mt-8 text-center">
+        <p id="gradingScore" class="text-2xl font-semibold text-green-600">Stenosis Severity: Calculating...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer Section -->
+  <footer class="bg-gray-800 text-white py-6">
+    <div class="container mx-auto text-center">
+      <p>&copy; 2025 BioAML. All rights reserved.</p>
+      <a href="index.html" class="text-green-400 hover:underline">Back to Home</a>
+    </div>
+  </footer>
+
+  <!-- JavaScript for Image Handling and Mask Simulation -->
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const imageInput = document.getElementById('imageInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const originalImage = document.getElementById('originalImage');
+    const maskCanvas = document.getElementById('maskCanvas');
+    const gradingScore = document.getElementById('gradingScore');
+    const resultsSection = document.getElementById('results');
+
+    // Trigger file input click when button is clicked
+    uploadBtn.addEventListener('click', () => imageInput.click());
+
+    // Handle file input
+    imageInput.addEventListener('change', (e) => {
+      handleImage(e.target.files[0]);
+    });
+
+    // Handle drag and drop
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        handleImage(file);
+      }
+    });
+
+    // Handle paste from clipboard
+    document.addEventListener('paste', (e) => {
+      const items = e.clipboardData.items;
+      for (let item of items) {
+        if (item.type.startsWith('image')) {
+          const file = item.getAsFile();
+          handleImage(file);
+          break;
+        }
+      }
+    });
+
+    // Process and display image
+    function handleImage(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        originalImage.src = e.target.result;
+        resultsSection.classList.remove('hidden');
+
+        // Simulate mask generation and grading score
+        generateMask(e.target.result);
+        gradingScore.textContent = 'Stenosis Severity: Moderate (75%)'; // Simulated score
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Simulate mask overlay
+    function generateMask(imageSrc) {
+      const img = new Image();
+      img.onload = () => {
+        maskCanvas.width = img.width;
+        maskCanvas.height = img.height;
+        const ctx = maskCanvas.getContext('2d');
+
+        // Draw original image
+        ctx.drawImage(img, 0, 0);
+
+        // Simulate mask (red tint for stenosis regions)
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
+        ctx.fillRect(img.width * 0.3, img.height * 0.3, img.width * 0.4, img.height * 0.4); // Simulated stenosis area
+      };
+      img.src = imageSrc;
+    }
+  </script>
+
+  <!-- Animation Keyframes -->
+  <style>
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fade-in 1s ease-out;
+    }
+  </style>
+</body>
+</html>
