@@ -152,21 +152,23 @@
       reader.readAsDataURL(file);
     }
 
-async function predict(file) {
-  status.textContent = '⏳ Processing image...';
-  grade.textContent = '';
-  resultImage.style.display = 'none';
+async function predict(file) { 
+  status.textContent = "⏳ Processing image...";
+  grade.textContent = "";
+  resultImage.style.display = "none";
 
   // Helper: normalize image into a usable <img> URL
   async function toImageURL(imgData) {
-    if (!imgData) throw new Error('No image data provided');
+    if (!imgData) throw new Error("No image data provided");
 
-    if (typeof imgData === 'string') {
-      if (imgData.startsWith('data:image/')) return imgData;
+    console.log('🔍 toImageURL input type:', typeof imgData, 'value preview:', imgData); // Debug log
+
+    if (typeof imgData === "string") {
+      if (imgData.startsWith("data:image/")) return imgData;
       if (/^[A-Za-z0-9+/=\s]+$/.test(imgData)) {
-        return 'data:image/png;base64,' + imgData;
+        return "data:image/png;base64," + imgData;
       }
-      throw new Error('Unrecognized image string format');
+      throw new Error("Unrecognized image string format");
     }
 
     if (imgData instanceof Blob) {
@@ -174,32 +176,48 @@ async function predict(file) {
     }
 
     if (imgData instanceof ArrayBuffer || ArrayBuffer.isView(imgData)) {
-      const blob = new Blob([imgData], { type: 'image/png' });
+      const blob = new Blob([imgData], { type: "image/png" });
       return URL.createObjectURL(blob);
     }
 
-    if (typeof imgData === 'object') {
-      // Handle Gradio FileData or nested objects
-      if (imgData.image) return toImageURL(imgData.image); // Recursive for { image: "..." }
-      if (imgData.data) return toImageURL(imgData.data); // Gradio might wrap data
-      if (imgData.name && imgData.url) return imgData.url; // Gradio File object
-      if (imgData.base64) return 'data:image/png;base64,' + imgData.base64; // Base64 extraction
-      console.warn('Unexpected object structure:', imgData);
-      throw new Error('Unsupported image data type: ' + Object.prototype.toString.call(imgData));
+    if (typeof imgData === "object") {
+      // Handle Gradio FileData/ImageData wrappers
+      if (imgData.data) {
+        // Common Gradio structure: { data: "base64...", is_file: true }
+        return toImageURL(imgData.data); // Recursive call
+      }
+      if (imgData.url) {
+        // File URL from Gradio
+        return imgData.url;
+      }
+      if (imgData.image) {
+        // Nested image property
+        return toImageURL(imgData.image);
+      }
+      if (imgData.base64) {
+        // Direct base64 property
+        return "data:image/png;base64," + imgData.base64;
+      }
+      if (imgData.path) {
+        // Temporary file path (rare in JS client, but fallback)
+        return imgData.path;
+      }
+      console.warn('🔍 Unexpected object structure in toImageURL:', imgData);
+      throw new Error("Unsupported image data type: " + Object.prototype.toString.call(imgData));
     }
 
-    throw new Error('Unsupported image data type: ' + Object.prototype.toString.call(imgData));
+    throw new Error("Unsupported image data type: " + Object.prototype.toString.call(imgData));
   }
 
   try {
     // Connect to Gradio Space
-    const app = await client('https://rajaatif786-ai4stenosis.hf.space');
+    const app = await client("https://rajaatif786-ai4stenosis.hf.space");
     const processedFile = await handle_file(file);
 
     // Try named endpoint first, fallback to fn_index 0
     let result;
     try {
-      result = await app.predict('//predict_image', [
+      result = await app.predict("//predict_image", [
         processedFile,
         parseFloat(alphaInput.value)
       ]);
@@ -210,31 +228,31 @@ async function predict(file) {
       ]);
     }
 
-    console.log('🔍 Full API Response:', result);
+    console.log("🔍 Full API Response:", result);
 
     // Extract image and label correctly
     const rawImageCandidate = result?.data?.[0]?.image || result?.data?.[0];
     console.log('🔍 Raw Image Candidate:', rawImageCandidate); // Debug the exact structure
-    const stenosisLabel = result?.data?.[1]?.label || result?.data?.[1] || 'Unknown';
+    const stenosisLabel = result?.data?.[1]?.label || result?.data?.[1] || "Unknown";
 
     // Convert and show image
     const imageURL = await toImageURL(rawImageCandidate);
 
     resultImage.onload = () => {
-      resultImage.style.display = 'block';
-      status.textContent = '✅ Analysis complete';
+      resultImage.style.display = "block";
+      status.textContent = "✅ Analysis complete";
       grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
     };
 
     resultImage.onerror = (err) => {
-      console.error('❌ Failed to load returned image', err);
-      status.textContent = '❌ Failed to display returned image';
+      console.error("❌ Failed to load returned image", err);
+      status.textContent = "❌ Failed to display returned image";
     };
 
     resultImage.src = imageURL;
   } catch (error) {
-    console.error('Prediction Error:', error);
-    status.textContent = `❌ Error processing image: ${error.message || 'Unknown error'}`;
+    console.error("Prediction Error:", error);
+    status.textContent = `❌ Error processing image: ${error.message || "Unknown error"}`;
   }
 }
   });
