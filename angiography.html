@@ -6,6 +6,7 @@
   <title>BioAML - Angiography Stenosis Prediction</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@gradio/client@latest/dist/index.min.js"></script>
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -164,31 +165,25 @@
     }
 
     async function predict(file) {
-      const formData = new FormData();
-      formData.append('data', file);  // Gradio expects 'data' for image inputs
-      formData.append('data', alphaInput.value);  // Gradio expects inputs in order, second input is alpha
-
       status.textContent = '⏳ Processing image...';
       grade.textContent = '';
       resultImage.style.display = 'none';
 
       try {
-        const API_URL = 'https://rajaatif786-ai4stenosis.hf.space/predict_image';
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          body: formData
-        });
+        // Connect to Gradio Space
+        const app = await gradio.client('https://rajaatif786-ai4stenosis.hf.space');
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+        // Call /predict_image endpoint (index 0 for main function)
+        const result = await app.predict(0, [
+          file, // Image input
+          parseFloat(alphaInput.value) // Alpha value
+        ]);
 
-        const result = await response.json();
         console.log(result);
 
-        // Handle Gradio response format
-        const base64Image = result.data[0];  // Base64-encoded overlaid image
-        const stenosisLabel = result.data[1].label;  // Stenosis grade
+        // Handle Gradio response
+        const base64Image = result.data[0]; // Base64-encoded overlaid image
+        const stenosisLabel = result.data[1].label; // Stenosis grade
 
         resultImage.src = base64Image;
         resultImage.style.display = 'block';
