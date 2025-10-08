@@ -163,7 +163,7 @@
         const processedFile = await handle_file(file);
 
         // Call endpoint
-        const result = await app.predict("/predict_image", [
+        const result = await app.predict("//predict_image", [
           processedFile,
           parseFloat(alphaInput.value)
         ]);
