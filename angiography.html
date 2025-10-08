@@ -152,37 +152,57 @@
       reader.readAsDataURL(file);
     }
 
-    async function predict(file) {
-      status.textContent = "⏳ Processing image...";
-      grade.textContent = "";
-      resultImage.style.display = "none";
+async function predict(file) {
+  status.textContent = "⏳ Processing image...";
+  grade.textContent = "";
+  resultImage.style.display = "none";
 
-      try {
-        // Connect to your Gradio Space
-        const app = await client("https://rajaatif786-ai4stenosis.hf.space");
-        const processedFile = await handle_file(file);
+  try {
+    // Connect to your Gradio Space
+    const app = await client("https://rajaatif786-ai4stenosis.hf.space");
+    const processedFile = await handle_file(file);
 
-        // Call endpoint
-        const result = await app.predict("//predict_image", [
-          processedFile,
-          parseFloat(alphaInput.value)
-        ]);
-
-        console.log("API Response:", result);
-
-        // Parse output
-        let base64Image = result.data?.[0];
-        let stenosisLabel = result.data?.[1]?.label || result.data?.[1];
-
-        resultImage.src = base64Image;
-        resultImage.style.display = "block";
-        grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
-        status.textContent = "✅ Analysis complete";
-      } catch (error) {
-        console.error("Prediction Error:", error);
-        status.textContent = `❌ Error processing image: ${error.message || "Unknown error"}`;
-      }
+    // Try named endpoint first
+    let result;
+    try {
+      result = await app.predict("/predict_image", [
+        processedFile,
+        parseFloat(alphaInput.value)
+      ]);
+    } catch {
+      // Fallback if no named endpoint
+      result = await app.predict(0, [
+        processedFile,
+        parseFloat(alphaInput.value)
+      ]);
     }
+
+    console.log("API Response:", result);
+
+    // ✅ Normalize Gradio response
+    let base64Image = result?.data?.[0];
+    let stenosisLabel = result?.data?.[1]?.label || result?.data?.[1];
+
+    // Some Gradio versions return { image: "data:image/png;base64,..."}
+    if (base64Image && typeof base64Image === "object" && base64Image.image) {
+      base64Image = base64Image.image;
+    }
+
+    // ✅ Ensure we have a valid base64 URI
+    if (base64Image && base64Image.startsWith("data:image")) {
+      resultImage.src = base64Image;
+      resultImage.style.display = "block";
+    } else {
+      throw new Error("Invalid image data returned from API");
+    }
+
+    grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
+    status.textContent = "✅ Analysis complete";
+  } catch (error) {
+    console.error("Prediction Error:", error);
+    status.textContent = `❌ Error processing image: ${error.message || "Unknown error"}`;
+  }
+}
   });
 </script>
 
