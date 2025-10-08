@@ -165,15 +165,14 @@
 
     async function predict(file) {
       const formData = new FormData();
-      formData.append('data', file);  // Changed to 'data' for Gradio compatibility
-      formData.append('alpha', alphaInput.value);
+      formData.append('data', file);  // Gradio expects 'data' for image inputs
+      formData.append('data', alphaInput.value);  // Gradio expects inputs in order, second input is alpha
 
       status.textContent = '⏳ Processing image...';
       grade.textContent = '';
       resultImage.style.display = 'none';
 
       try {
-        // Updated API URL for your Space with /predict_image
         const API_URL = 'https://rajaatif786-ai4stenosis.hf.space/predict_image';
         const response = await fetch(API_URL, {
           method: 'POST',
@@ -188,8 +187,8 @@
         console.log(result);
 
         // Handle Gradio response format
-        const base64Image = result.data[0];
-        const stenosisLabel = result.data[1].label;
+        const base64Image = result.data[0];  // Base64-encoded overlaid image
+        const stenosisLabel = result.data[1].label;  // Stenosis grade
 
         resultImage.src = base64Image;
         resultImage.style.display = 'block';
