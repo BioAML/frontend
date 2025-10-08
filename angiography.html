@@ -47,6 +47,12 @@
           <p class="text-gray-600 mb-4">Drag and drop an image here, or click to upload, or paste from clipboard</p>
           <input type="file" id="imageInput" accept="image/*" class="hidden">
           <button id="uploadBtn" class="bg-green-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-green-700 transition duration-300">Select Image</button>
+          <p id="status" class="mt-4 text-gray-600"></p>
+        </div>
+        <div class="mt-4">
+          <label for="alphaInput" class="text-gray-600">Overlay Alpha (Transparency):</label>
+          <input type="range" id="alphaInput" min="0.1" max="1.0" step="0.05" value="0.7" class="w-full">
+          <span id="alphaValue" class="text-gray-600">0.7</span>
         </div>
       </div>
     </div>
@@ -65,12 +71,12 @@
         <!-- Overlayed Mask -->
         <div class="bg-white p-6 rounded-lg shadow-lg hover-scale">
           <h3 class="text-xl font-semibold text-green-600 mb-4">Overlayed Mask</h3>
-          <canvas id="maskCanvas" class="w-full h-auto rounded-lg"></canvas>
+          <img id="resultImage" class="w-full h-auto rounded-lg" style="display: none;" alt="Segmented and Graded Image">
         </div>
       </div>
       <!-- Grading Score -->
       <div class="mt-8 text-center">
-        <p id="gradingScore" class="text-2xl font-semibold text-green-600">Stenosis Severity: Calculating...</p>
+        <p id="grade" class="text-2xl font-semibold text-green-600"></p>
       </div>
     </div>
   </section>
@@ -83,15 +89,23 @@
     </div>
   </footer>
 
-  <!-- JavaScript for Image Handling and Mask Simulation -->
+  <!-- JavaScript for Image Handling and API Call -->
   <script>
     const dropzone = document.getElementById('dropzone');
     const imageInput = document.getElementById('imageInput');
     const uploadBtn = document.getElementById('uploadBtn');
     const originalImage = document.getElementById('originalImage');
-    const maskCanvas = document.getElementById('maskCanvas');
-    const gradingScore = document.getElementById('gradingScore');
+    const resultImage = document.getElementById('resultImage');
+    const status = document.getElementById('status');
+    const grade = document.getElementById('grade');
+    const alphaInput = document.getElementById('alphaInput');
+    const alphaValue = document.getElementById('alphaValue');
     const resultsSection = document.getElementById('results');
+
+    // Update alpha value display
+    alphaInput.addEventListener('input', () => {
+      alphaValue.textContent = alphaInput.value;
+    });
 
     // Trigger file input click when button is clicked
     uploadBtn.addEventListener('click', () => imageInput.click());
@@ -132,37 +146,56 @@
       }
     });
 
-    // Process and display image
-    function handleImage(file) {
-      if (!file) return;
+    // Process and send image to API
+    async function handleImage(file) {
+      if (!file) {
+        alert("Please select an image first!");
+        return;
+      }
+
+      // Display original image
       const reader = new FileReader();
       reader.onload = (e) => {
         originalImage.src = e.target.result;
         resultsSection.classList.remove('hidden');
-
-        // Simulate mask generation and grading score
-        generateMask(e.target.result);
-        gradingScore.textContent = 'Stenosis Severity: Moderate (75%)'; // Simulated score
+        predict(file);
       };
       reader.readAsDataURL(file);
     }
 
-    // Simulate mask overlay
-    function generateMask(imageSrc) {
-      const img = new Image();
-      img.onload = () => {
-        maskCanvas.width = img.width;
-        maskCanvas.height = img.height;
-        const ctx = maskCanvas.getContext('2d');
+    async function predict(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('alpha', alphaInput.value);
 
-        // Draw original image
-        ctx.drawImage(img, 0, 0);
+      status.textContent = '⏳ Processing image...';
+      grade.textContent = '';
+      resultImage.style.display = 'none';
 
-        // Simulate mask (red tint for stenosis regions)
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
-        ctx.fillRect(img.width * 0.3, img.height * 0.3, img.width * 0.4, img.height * 0.4); // Simulated stenosis area
-      };
-      img.src = imageSrc;
+      try {
+        // Replace with your Hugging Face Space API URL
+        const API_URL = 'https://your-hf-space.hf.space/predict';
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log(result);
+
+        // Handle API response
+        resultImage.src = result.overlaid_image;
+        resultImage.style.display = 'block';
+        grade.textContent = `🩸 Stenosis Grade: ${result.grade}`;
+        status.textContent = '✅ Analysis complete';
+      } catch (error) {
+        console.error(error);
+        status.textContent = '❌ Error processing image';
+      }
     }
   </script>
 
