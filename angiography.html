@@ -90,123 +90,128 @@
   </footer>
 
   <!-- JavaScript for Image Handling and API Call -->
-  <script src="https://unpkg.com/@gradio/client@0.13.0/dist/index.min.js" defer></script>
+  <script src="https://unpkg.com/@gradio/client@0.12.0/dist/index.min.js" defer></script>
   <script>
-    const dropzone = document.getElementById('dropzone');
-    const imageInput = document.getElementById('imageInput');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const originalImage = document.getElementById('originalImage');
-    const resultImage = document.getElementById('resultImage');
-    const status = document.getElementById('status');
-    const grade = document.getElementById('grade');
-    const alphaInput = document.getElementById('alphaInput');
-    const alphaValue = document.getElementById('alphaValue');
-    const resultsSection = document.getElementById('results');
+    window.onload = function () {
+      const dropzone = document.getElementById('dropzone');
+      const imageInput = document.getElementById('imageInput');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const originalImage = document.getElementById('originalImage');
+      const resultImage = document.getElementById('resultImage');
+      const status = document.getElementById('status');
+      const grade = document.getElementById('grade');
+      const alphaInput = document.getElementById('alphaInput');
+      const alphaValue = document.getElementById('alphaValue');
+      const resultsSection = document.getElementById('results');
 
-    // Update alpha value display
-    alphaInput.addEventListener('input', () => {
-      alphaValue.textContent = alphaInput.value;
-    });
+      // Update alpha value display
+      alphaInput.addEventListener('input', () => {
+        alphaValue.textContent = alphaInput.value;
+      });
 
-    // Trigger file input click when button is clicked
-    uploadBtn.addEventListener('click', () => imageInput.click());
+      // Trigger file input click when button is clicked
+      uploadBtn.addEventListener('click', () => imageInput.click());
 
-    // Handle file input
-    imageInput.addEventListener('change', (e) => {
-      handleImage(e.target.files[0]);
-    });
+      // Handle file input
+      imageInput.addEventListener('change', (e) => {
+        handleImage(e.target.files[0]);
+      });
 
-    // Handle drag and drop
-    dropzone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropzone.classList.add('dragover');
-    });
+      // Handle drag and drop
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
 
-    dropzone.addEventListener('dragleave', () => {
-      dropzone.classList.remove('dragover');
-    });
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+      });
 
-    dropzone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropzone.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('image/')) {
-        handleImage(file);
-      }
-    });
-
-    // Handle paste from clipboard
-    document.addEventListener('paste', (e) => {
-      const items = e.clipboardData.items;
-      for (let item of items) {
-        if (item.type.startsWith('image')) {
-          const file = item.getAsFile();
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
           handleImage(file);
-          break;
         }
-      }
-    });
+      });
 
-    // Process and send image to API
-    async function handleImage(file) {
-      if (!file) {
-        alert("Please select an image first!");
-        return;
-      }
+      // Handle paste from clipboard
+      document.addEventListener('paste', (e) => {
+        const items = e.clipboardData.items;
+        for (let item of items) {
+          if (item.type.startsWith('image')) {
+            const file = item.getAsFile();
+            handleImage(file);
+            break;
+          }
+        }
+      });
 
-      // Display original image
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        originalImage.src = e.target.result;
-        resultsSection.classList.remove('hidden');
-        predict(file);
-      };
-      reader.readAsDataURL(file);
-    }
-
-    async function predict(file) {
-      status.textContent = '⏳ Processing image...';
-      grade.textContent = '';
-      resultImage.style.display = 'none';
-
-      try {
-        // Check if GradioClient is available
-        if (typeof window.GradioClient === 'undefined') {
-          throw new Error('GradioClient library not loaded');
+      // Process and send image to API
+      function handleImage(file) {
+        if (!file) {
+          alert("Please select an image first!");
+          return;
         }
 
-        // Connect to Gradio Space
-        const app = await window.GradioClient('https://rajaatif786-ai4stenosis.hf.space');
-
-        // Call the /predict_image endpoint with file and alpha
-        const result = await app.predict('//predict_image', [
-          file, // File object
-          parseFloat(alphaInput.value) // Alpha value
-        ]);
-
-        console.log('API Response:', result);
-
-        // Handle Gradio response with fallbacks
-        let base64Image, stenosisLabel;
-        if (result.data && Array.isArray(result.data)) {
-          base64Image = result.data[0]; // Base64-encoded image
-          stenosisLabel = result.data[1]?.label || result.data[1]; // Gradio Label or fallback
-        } else if (result.overlaid_image && result.grade) {
-          base64Image = result.overlaid_image;
-          stenosisLabel = result.grade;
-        } else {
-          throw new Error('Unexpected response format');
-        }
-
-        resultImage.src = base64Image;
-        resultImage.style.display = 'block';
-        grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
-        status.textContent = '✅ Analysis complete';
-      } catch (error) {
-        console.error('Prediction Error:', error);
-        status.textContent = `❌ Error processing image: ${error.message}`;
+        // Display original image
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          originalImage.src = e.target.result;
+          resultsSection.classList.remove('hidden');
+          predict(file);
+        };
+        reader.readAsDataURL(file);
       }
-    }
+
+      async function predict(file) {
+        status.textContent = '⏳ Processing image...';
+        grade.textContent = '';
+        resultImage.style.display = 'none';
+
+        try {
+          // Check if GradioClient is available
+          if (typeof window.GradioClient === 'undefined') {
+            throw new Error('GradioClient library not loaded. Check console for network errors.');
+          }
+
+          // Connect to Gradio Space
+          const app = await window.GradioClient.connect('https://rajaatif786-ai4stenosis.hf.space');
+
+          // Process file with handle_file
+          const processedFile = window.GradioClient.handle_file(file);
+
+          // Call the /predict_image endpoint with processed file and alpha
+          const result = await app.predict('//predict_image', [
+            processedFile, // Processed file, equivalent to handle_file
+            parseFloat(alphaInput.value) // Alpha value
+          ]);
+
+          console.log('API Response:', result);
+
+          // Handle Gradio response with fallbacks
+          let base64Image, stenosisLabel;
+          if (result.data && Array.isArray(result.data)) {
+            base64Image = result.data[0]; // Base64-encoded image
+            stenosisLabel = result.data[1]?.label || result.data[1]; // Gradio Label or fallback
+          } else if (result.overlaid_image && result.grade) {
+            base64Image = result.overlaid_image;
+            stenosisLabel = result.grade;
+          } else {
+            throw new Error('Unexpected response format');
+          }
+
+          resultImage.src = base64Image;
+          resultImage.style.display = 'block';
+          grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
+          status.textContent = '✅ Analysis complete';
+        } catch (error) {
+          console.error('Prediction Error:', error);
+          status.textContent = `❌ Error processing image: ${error.message || 'Unknown error'}`;
+        }
+      }
+    };
   </script>
 
   <!-- Animation Keyframes -->
