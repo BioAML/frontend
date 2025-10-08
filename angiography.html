@@ -173,25 +173,33 @@
         // Connect to Gradio Space
         const app = await gradio.client('https://rajaatif786-ai4stenosis.hf.space');
 
-        // Call /predict_image endpoint (index 0 for main function)
-        const result = await app.predict(0, [
-          file, // Image input
+        // Call the /predict_image endpoint with file and alpha
+        const result = await app.predict('/predict_image', [
+          file, // File object, equivalent to handle_file
           parseFloat(alphaInput.value) // Alpha value
         ]);
 
-        console.log(result);
+        console.log('API Response:', result);
 
-        // Handle Gradio response
-        const base64Image = result.data[0]; // Base64-encoded overlaid image
-        const stenosisLabel = result.data[1].label; // Stenosis grade
+        // Handle Gradio response with fallbacks
+        let base64Image, stenosisLabel;
+        if (result.data && Array.isArray(result.data)) {
+          base64Image = result.data[0]; // Base64-encoded image
+          stenosisLabel = result.data[1]?.label || result.data[1]; // Gradio Label or fallback
+        } else if (result.overlaid_image && result.grade) {
+          base64Image = result.overlaid_image;
+          stenosisLabel = result.grade;
+        } else {
+          throw new Error('Unexpected response format');
+        }
 
         resultImage.src = base64Image;
         resultImage.style.display = 'block';
         grade.textContent = `🩸 Stenosis Grade: ${stenosisLabel}`;
         status.textContent = '✅ Analysis complete';
       } catch (error) {
-        console.error(error);
-        status.textContent = '❌ Error processing image. Check console for details.';
+        console.error('Prediction Error:', error);
+        status.textContent = `❌ Error processing image: ${error.message}`;
       }
     }
   </script>
