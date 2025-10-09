@@ -72,93 +72,98 @@
     </footer>
 
     <!-- Firebase SDK Imports and Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            createUserWithEmailAndPassword, 
-            updateProfile
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+        getAuth, 
+        createUserWithEmailAndPassword, 
+        updateProfile
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global variables provided by the environment
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    // Global variables provided by the environment
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-        const form = document.getElementById('signupForm');
-        const messageBox = document.getElementById('messageBox');
-        const signupButton = document.getElementById('signupButton');
+    const form = document.getElementById('signupForm');
+    const messageBox = document.getElementById('messageBox');
+    const signupButton = document.getElementById('signupButton');
 
-        function displayMessage(text, isError = false) {
-            messageBox.textContent = text;
-            messageBox.className = `p-3 text-sm rounded-lg text-center ${isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
-            messageBox.style.display = 'block';
-        }
+    function displayMessage(text, isError = false) {
+        messageBox.textContent = text;
+        messageBox.className = `p-3 text-sm rounded-lg text-center ${isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
+        messageBox.style.display = 'block';
+    }
+    
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        messageBox.style.display = 'none';
+        signupButton.disabled = true;
+        signupButton.textContent = 'Registering...';
+
+        if (password.length < 6) {
+            displayMessage('Password must be at least 6 characters long.', true);
+            signupButton.disabled = false;
+            signupButton.textContent = 'Sign Up';
+            return;
+        }
+
+        try {
+            // 1. Create the user
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // 2. Set user display name
+            await updateProfile(user, { displayName: name });
             
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            // 3. Save user data to Firestore
+            const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/user_data/profile`);
+            await setDoc(userDocRef, {
+                name: name,
+                email: email,
+                createdAt: new Date().toISOString(),
+                role: 'free_user'
+            });
+
+            displayMessage(`✅ Success! Welcome, ${name}. Redirecting to main application...`);
             
-            messageBox.style.display = 'none';
-            signupButton.disabled = true;
-            signupButton.textContent = 'Registering...';
-
-            if (password.length < 6) {
-                displayMessage('Password must be at least 6 characters long.', true);
-                signupButton.disabled = false;
-                signupButton.textContent = 'Sign Up';
-                return;
-            }
-
-            try {
-                // 1. Create the user
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                // 2. Set user display name (optional but recommended)
-                await updateProfile(user, { displayName: name });
-                
-                // 3. Save user data to Firestore (private collection)
-                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/user_data/profile`);
-                await setDoc(userDocRef, {
-                    name: name,
-                    email: email,
-                    createdAt: new Date().toISOString(),
-                    role: 'free_user'
-                });
-
-                displayMessage(`✅ Success! Welcome, ${name}. Redirecting to main application...`);
-                
-                // 4. CORRECT REDIRECTION: Use a known, reliable path
-                // This assumes 'index.html' is the main application page.
-                setTimeout(() => { 
-                    console.log("Attempting redirection to index.html...");
-                    window.location.href = './index.html'; 
-                }, 1500); // Reduced delay
-
-            } catch (error) {
-                console.error("Firebase Sign Up Error:", error);
-                let errorMessage = 'An unknown error occurred.';
-                if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = 'This email address is already in use. Try signing in.';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'The email address is not valid.';
-                } else {
-                    errorMessage = error.message;
+            // 4. Redirect immediately with fallback
+            console.log("Attempting redirection to /index.html...");
+            window.location.href = '/index.html'; // Use absolute path
+            setTimeout(() => {
+                if (window.location.href === window.location.href) { // Check if redirect failed
+                    console.warn("Redirect failed, retrying with relative path...");
+                    window.location.href = './index.html';
                 }
-                displayMessage(`❌ ${errorMessage}`, true);
-                signupButton.disabled = false;
-                signupButton.textContent = 'Sign Up';
+            }, 1000); // Fallback delay
+
+        } catch (error) {
+            console.error("Firebase Sign Up Error:", error);
+            let errorMessage = 'An unknown error occurred.';
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'This email address is already in use. Try signing in.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'The email address is not valid.';
+            } else if (error.code === 'permission-denied') {
+                errorMessage = 'Permission denied. Check Firestore rules.';
+            } else {
+                errorMessage = error.message;
             }
-        });
-    </script>
+            displayMessage(`❌ ${errorMessage}`, true);
+            signupButton.disabled = false;
+            signupButton.textContent = 'Sign Up';
+        }
+    });
+</script>
 </body>
 </html>
