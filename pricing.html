@@ -45,7 +45,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BioAML - Pricing Plans</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://js.stripe.com/v3/"></script>
+  <script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -63,7 +63,6 @@
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
-  <!-- Header Section -->
   <header class="relative h-64 gradient-bg text-white flex flex-col justify-center items-center text-center">
     <div class="relative z-10">
       <h1 class="text-4xl md:text-5xl font-bold mb-4 animate-fade-in">BioAML Pricing Plans</h1>
@@ -72,11 +71,9 @@
     </div>
   </header>
 
-  <!-- Pricing Plans Section -->
   <section class="py-16 bg-white">
     <div class="container mx-auto px-4">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-        <!-- Free Plan -->
         <div class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800">
           <h3 class="text-2xl font-bold text-center mb-4">Free</h3>
           <p class="text-center text-gray-600 mb-4">$0 / month</p>
@@ -95,7 +92,6 @@
           <button class="plan-btn bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition duration-300 w-full" data-plan="Free">Get Started</button>
         </div>
 
-        <!-- Basic Plan -->
         <div class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800 border-2 border-green-500">
           <h3 class="text-2xl font-bold text-center mb-4">Basic</h3>
           <p class="text-center text-gray-600 mb-4">$9.99 / month</p>
@@ -114,7 +110,6 @@
           <button class="plan-btn bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 w-full" data-plan="Basic">Choose Basic</button>
         </div>
 
-        <!-- Premium Plan -->
         <div class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800">
           <h3 class="text-2xl font-bold text-center mb-4">Premium</h3>
           <p class="text-center text-gray-600 mb-4">$29.99 / month</p>
@@ -131,7 +126,6 @@
         </div>
       </div>
 
-      <!-- Summary and Checkout -->
       <div class="mt-12 max-w-4xl mx-auto bg-gray-50 p-6 rounded-lg shadow-lg">
         <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Selection</h3>
         <div id="selectedServices" class="mb-4 space-y-2">
@@ -142,15 +136,14 @@
             <span class="text-lg font-semibold">Total:</span>
             <span id="totalPrice" class="text-xl font-bold text-green-600">$0.00</span>
           </div>
-          <button id="checkoutBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+          <a id="checkoutBtn" href="#" role="button" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-center">
             Proceed to Checkout
-          </button>
+          </a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Footer Section -->
   <footer class="bg-gray-800 text-white py-6">
     <div class="container mx-auto text-center">
       <p>&copy; 2025 BioAML. All rights reserved.</p>
@@ -158,7 +151,6 @@
     </div>
   </footer>
 
-  <!-- Animation Keyframes -->
   <style>
     @keyframes fade-in {
       from { opacity: 0; transform: translateY(20px); }
@@ -169,13 +161,19 @@
     }
   </style>
 <script>
-    // 1. Initialize Stripe with your Public Key
-    // NOTE: REPLACE 'pk_test_YourPublishableKey' with your actual Stripe publishable key
-    const stripe = Stripe('pk_test_YourPublishableKey');
+    // 1. Stripe initialization removed
 
     let selectedServices = [];
     let selectedPlan = null;
+    let selectedCheckoutUrl = null; // NEW: Variable to hold the Lemon Squeezy URL
 
+    // 2. NEW: Map your plans to your actual Lemon Squeezy Variant Checkout URLs.
+    // IMPORTANT: Replace the placeholder URLs with your actual store name and Variant IDs.
+    const lemonSqueezyUrls = {
+        'Basic': 'https://[YOUR_STORE].lemonsqueezy.com/checkout/buy/[BASIC_VARIANT_ID]',
+        'Premium': 'https://[YOUR_STORE].lemonsqueezy.com/checkout/buy/[PREMIUM_VARIANT_ID]'
+    };
+    
     // Service configuration remains the same
     const services = {
         'genomic_pathogenicity': { name: '5 Genomic predictions/month', price: 0, plan: 'Free' },
@@ -189,13 +187,15 @@
     const planPriority = { 'Free': 0, 'Basic': 1, 'Premium': 2 };
 
     function updateSelection() {
-        // ... (The updateSelection function remains the same as your original code) ...
         selectedServices = [];
+        const checkoutBtn = document.getElementById('checkoutBtn');
 
         if (!selectedPlan) {
             document.getElementById('selectedServices').innerHTML = '<p class="text-gray-500">No services selected yet.</p>';
             document.getElementById('totalPrice').textContent = '$0.00';
-            document.getElementById('checkoutBtn').disabled = true;
+            checkoutBtn.disabled = true;
+            checkoutBtn.classList.remove('lemonsqueezy-button'); // Ensure class is removed
+            checkoutBtn.removeAttribute('href');
             return;
         }
 
@@ -224,8 +224,22 @@
 
         document.getElementById('totalPrice').textContent = `$${total.toFixed(2)}`;
         
-        // Only enable checkout if a paid plan is selected
-        document.getElementById('checkoutBtn').disabled = (selectedPlan === 'Free' || selectedServices.length === 0);
+        // --- Lemon Squeezy Checkout Setup ---
+        selectedCheckoutUrl = lemonSqueezyUrls[selectedPlan] || null;
+        
+        const isPaidPlanSelected = (selectedPlan === 'Basic' || selectedPlan === 'Premium');
+
+        if (isPaidPlanSelected && selectedCheckoutUrl) {
+            // For paid plans, set the class and href for Lemon.js to open the overlay
+            checkoutBtn.classList.add('lemonsqueezy-button');
+            checkoutBtn.setAttribute('href', selectedCheckoutUrl);
+            checkoutBtn.disabled = false;
+        } else {
+            // For Free plan or no selection, ensure the Lemon Squeezy class/link is removed
+            checkoutBtn.classList.remove('lemonsqueezy-button');
+            checkoutBtn.removeAttribute('href');
+            checkoutBtn.disabled = (selectedPlan === 'Free' || selectedServices.length === 0);
+        }
     }
 
     // Event listeners for plan buttons
@@ -236,53 +250,20 @@
         });
     });
 
-    // 2. MODIFIED Checkout button logic for Stripe integration
-    document.getElementById('checkoutBtn').addEventListener('click', async () => {
+    // 3. NEW Checkout button logic (only handles the custom "Free Plan" action)
+    document.getElementById('checkoutBtn').addEventListener('click', (event) => {
         if (selectedPlan === 'Free' || !selectedPlan) {
+            // Prevent the default link action if it's the free plan
+            event.preventDefault(); 
+            
             alert('The Free plan does not require checkout. You can proceed.');
-            window.location.href = 'dashboard.html';
+            // Redirect to a dashboard or signup page for the Free plan
+            window.location.href = 'dashboard.html'; 
             return;
         }
-
-        const button = document.getElementById('checkoutBtn');
-        button.disabled = true;
-        button.textContent = 'Processing...';
-
-        try {
-            // A. Call your server to create a Stripe Checkout Session
-            // NOTE: REPLACE THE URL WITH YOUR ACTUAL SERVER ENDPOINT
-            const response = await fetch('/api/create-checkout-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ plan: selectedPlan }), // Send the selected plan ID
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const session = await response.json();
-            
-            // B. Redirect to Stripe Checkout page
-            const result = await stripe.redirectToCheckout({
-                sessionId: session.id, // Use the Session ID returned by your server
-            });
-
-            if (result.error) {
-                // If the redirect fails due to a client-side error
-                alert(`Error: ${result.error.message}`);
-                console.error(result.error);
-            }
-        } catch (e) {
-            alert('An error occurred during checkout. Please try again.');
-            console.error('Checkout error:', e);
-        } finally {
-            // Re-enable the button regardless of success or failure
-            button.disabled = false;
-            button.textContent = 'Proceed to Checkout';
-        }
+        
+        // For Basic/Premium, the lemonsqueezy-button class is already set and 
+        // the lemon.js script will handle the click to open the checkout overlay.
     });
 </script>
 </body>
