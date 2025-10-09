@@ -17,6 +17,7 @@
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
     
+    <!-- Navigation Bar -->
     <nav class="bg-white shadow-md">
         <div class="container mx-auto px-4 py-4 flex justify-between items-center">
             <a href="index.html" class="text-2xl font-bold text-blue-600">BioAML</a>
@@ -24,12 +25,15 @@
         </div>
     </nav>
 
+    <!-- Sign Up Form Section -->
     <section class="flex-grow flex items-center justify-center py-12">
         <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
             <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">Create Your BioAML Account</h2>
             
-            <form action="#" method="POST" class="space-y-6">
+            <form id="signupForm" class="space-y-6">
                 
+                <div id="messageBox" class="p-3 text-sm rounded-lg text-center hidden" role="alert"></div>
+
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700">Full Name</label>
                     <input type="text" id="name" name="name" required 
@@ -48,13 +52,7 @@
                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
-                <div>
-                    <label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
-                    <input type="password" id="confirm-password" name="confirm-password" required 
-                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                </div>
-
-                <button type="submit" 
+                <button type="submit" id="signupButton"
                         class="w-full gradient-bg text-white py-3 rounded-md font-semibold hover:opacity-90 transition duration-300">
                     Sign Up
                 </button>
@@ -66,10 +64,101 @@
         </div>
     </section>
 
+    <!-- Footer Section -->
     <footer class="bg-gray-800 text-white py-4 mt-auto">
         <div class="container mx-auto text-center">
             <p>&copy; 2025 BioAML. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- Firebase SDK Imports and Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            updateProfile,
+            setPersistence,
+            browserSessionPersistence
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the environment
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const form = document.getElementById('signupForm');
+        const messageBox = document.getElementById('messageBox');
+        const signupButton = document.getElementById('signupButton');
+
+        function displayMessage(text, isError = false) {
+            messageBox.textContent = text;
+            messageBox.className = `p-3 text-sm rounded-lg text-center ${isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
+            messageBox.style.display = 'block';
+        }
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            messageBox.style.display = 'none';
+            signupButton.disabled = true;
+            signupButton.textContent = 'Registering...';
+
+            if (password.length < 6) {
+                displayMessage('Password must be at least 6 characters long.', true);
+                signupButton.disabled = false;
+                signupButton.textContent = 'Sign Up';
+                return;
+            }
+
+            try {
+                // 1. Create the user
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // 2. Set user display name (optional but recommended)
+                await updateProfile(user, { displayName: name });
+                
+                // 3. Save user data to Firestore (private collection)
+                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/user_data/profile`);
+                await setDoc(userDocRef, {
+                    name: name,
+                    email: email,
+                    createdAt: new Date().toISOString(),
+                    role: 'free_user'
+                });
+
+                // 4. Persistence (keep session active)
+                await setPersistence(auth, browserSessionPersistence);
+
+                displayMessage(`✅ Success! Welcome, ${name}. Redirecting...`);
+                // Redirect user to the main modules page after successful sign-up
+                setTimeout(() => { window.location.href = 'index.html#modules'; }, 2000);
+
+            } catch (error) {
+                console.error("Firebase Sign Up Error:", error);
+                let errorMessage = 'An unknown error occurred.';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'This email address is already in use. Try signing in.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'The email address is not valid.';
+                } else {
+                    errorMessage = error.message;
+                }
+                displayMessage(`❌ ${errorMessage}`, true);
+                signupButton.disabled = false;
+                signupButton.textContent = 'Sign Up';
+            }
+        });
+    </script>
 </body>
 </html>
