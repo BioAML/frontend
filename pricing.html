@@ -161,13 +161,13 @@
     }
   </style>
 <script>
-    // 1. Stripe initialization removed
+    // Stripe initialization removed
 
     let selectedServices = [];
     let selectedPlan = null;
-    let selectedCheckoutUrl = null; // NEW: Variable to hold the Lemon Squeezy URL
+    let selectedCheckoutUrl = null; // Variable to hold the Lemon Squeezy URL
 
-    // 2. NEW: Map your plans to your actual Lemon Squeezy Variant Checkout URLs.
+    // 1. NEW: Map your plans to your actual Lemon Squeezy Variant Checkout URLs.
     // IMPORTANT: Replace the placeholder URLs with your actual store name and Variant IDs.
     const lemonSqueezyUrls = {
         'Basic': 'https://[YOUR_STORE].lemonsqueezy.com/checkout/buy/[BASIC_VARIANT_ID]',
@@ -193,9 +193,9 @@
         if (!selectedPlan) {
             document.getElementById('selectedServices').innerHTML = '<p class="text-gray-500">No services selected yet.</p>';
             document.getElementById('totalPrice').textContent = '$0.00';
-            checkoutBtn.disabled = true;
             checkoutBtn.classList.remove('lemonsqueezy-button'); // Ensure class is removed
             checkoutBtn.removeAttribute('href');
+            checkoutBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
             return;
         }
 
@@ -233,12 +233,12 @@
             // For paid plans, set the class and href for Lemon.js to open the overlay
             checkoutBtn.classList.add('lemonsqueezy-button');
             checkoutBtn.setAttribute('href', selectedCheckoutUrl);
-            checkoutBtn.disabled = false;
+            checkoutBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
         } else {
-            // For Free plan or no selection, ensure the Lemon Squeezy class/link is removed
+            // For Free plan, remove Lemon Squeezy class/link and manage redirection via JS click handler
             checkoutBtn.classList.remove('lemonsqueezy-button');
             checkoutBtn.removeAttribute('href');
-            checkoutBtn.disabled = (selectedPlan === 'Free' || selectedServices.length === 0);
+            checkoutBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
         }
     }
 
@@ -250,21 +250,23 @@
         });
     });
 
-    // 3. NEW Checkout button logic (only handles the custom "Free Plan" action)
+    // 2. MODIFIED Checkout button logic: No Stripe, only Lemon Squeezy setup or Free plan redirect
     document.getElementById('checkoutBtn').addEventListener('click', (event) => {
+        // Only override the default 'a' tag behavior if it's the free plan
         if (selectedPlan === 'Free' || !selectedPlan) {
-            // Prevent the default link action if it's the free plan
             event.preventDefault(); 
             
             alert('The Free plan does not require checkout. You can proceed.');
-            // Redirect to a dashboard or signup page for the Free plan
             window.location.href = 'dashboard.html'; 
-            return;
         }
         
-        // For Basic/Premium, the lemonsqueezy-button class is already set and 
-        // the lemon.js script will handle the click to open the checkout overlay.
+        // For Basic/Premium, the lemonsqueezy-button class and href are set in updateSelection(), 
+        // and the lemon.js script handles the click to open the checkout overlay, 
+        // using the href attribute as the checkout URL.
     });
+    
+    // Initial call to set up the selection state
+    updateSelection(); 
 </script>
 </body>
 </html>
