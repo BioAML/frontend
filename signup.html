@@ -82,7 +82,15 @@
     import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // Global variables provided by the environment
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    const firebaseConfig = {
+    apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
+    authDomain: "bioaml.firebaseapp.com",
+    projectId: "bioaml",
+    storageBucket: "bioaml.firebasestorage.app",
+    messagingSenderId: "778735157645",
+    appId: "1:778735157645:web:1f1580bb3596c0aa18fdc4",
+    measurementId: "G-3KLFW5G4P3"
+  };
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     // Initialize Firebase
