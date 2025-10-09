@@ -77,9 +77,7 @@
         import { 
             getAuth, 
             createUserWithEmailAndPassword, 
-            updateProfile,
-            setPersistence,
-            browserSessionPersistence
+            updateProfile
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -137,12 +135,12 @@
                     role: 'free_user'
                 });
 
-                // 4. Persistence (keep session active)
-                await setPersistence(auth, browserSessionPersistence);
-
-                displayMessage(`✅ Success! Welcome, ${name}. Redirecting...`);
-                // Redirect user to the main modules page after successful sign-up
-                setTimeout(() => { window.location.href = 'index.html#modules'; }, 2000);
+                displayMessage(`✅ Success! Welcome, ${name}. Redirecting to modules...`);
+                
+                // 4. CORRECT REDIRECTION: Redirect user to the main modules page
+                setTimeout(() => { 
+                    window.location.href = 'index.html#modules'; 
+                }, 2000);
 
             } catch (error) {
                 console.error("Firebase Sign Up Error:", error);
