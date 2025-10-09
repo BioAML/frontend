@@ -135,11 +135,12 @@
                     role: 'free_user'
                 });
 
-                displayMessage(`✅ Success! Welcome, ${name}. Redirecting to modules...`);
+                displayMessage(`✅ Success! Welcome, ${name}. Redirecting to main application...`);
                 
-                // 4. CORRECT REDIRECTION: Redirect user to the main modules page
+                // 4. CORRECT REDIRECTION: Use a known, reliable path
+                // This assumes 'index.html' is the main application page.
                 setTimeout(() => { 
-                    window.location.href = 'index.html#modules'; 
+                    window.location.href = './index.html'; // Changed to explicit relative path
                 }, 2000);
 
             } catch (error) {
