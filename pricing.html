@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BioAML - Pricing</title>
+  <title>BioAML - Pricing Plans</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -16,81 +16,106 @@
     .hover-scale:hover {
       transform: scale(1.05);
     }
-    /* Add the gradient background class for a consistent look, perhaps in the header */
     .gradient-bg {
       background: linear-gradient(135deg, #3b82f6, #10b981);
     }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
-    
-    <nav class="bg-white shadow-md">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <a href="index.html" class="text-2xl font-bold text-blue-600">BioAML</a>
-            <a href="index.html#modules" class="text-gray-600 hover:text-blue-600 transition duration-300">Back to Modules</a>
-        </div>
-    </nav>
+<body class="bg-gray-100 text-gray-800">
+  <!-- Header Section -->
+  <header class="relative h-64 gradient-bg text-white flex flex-col justify-center items-center text-center">
+    <div class="relative z-10">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4 animate-fade-in">BioAML Pricing Plans</h1>
+      <p class="text-lg md:text-xl mb-4">Choose the plan that fits your needs</p>
+      <a href="index.html" class="bg-white text-blue-600 px-6 py-3 rounded-full font-semibold hover:bg-blue-100 transition duration-300">Back to Services</a>
+    </div>
+  </header>
 
-    <section id="pricing" class="py-20">
-        <div class="container mx-auto px-4">
-            <h1 class="text-5xl font-extrabold text-center text-gray-800 mb-4">Our Flexible Pricing</h1>
-            <p class="text-xl text-center text-gray-500 mb-16">Choose the plan that powers your biological and medical AI needs.</p>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            <div class="bg-white p-8 rounded-lg shadow-xl hover-scale flex flex-col items-center">
-              <h3 class="text-2xl font-bold text-gray-700 mb-4">Free Tier</h3>
-              <p class="text-5xl font-extrabold text-blue-600 mb-6">$0<span class="text-xl font-normal text-gray-500">/month</span></p>
-              <p class="text-center text-gray-500 mb-6">Start exploring our core features at no cost.</p>
-              
-              <ul class="text-left w-full space-y-3 mb-8">
-                <li class="flex items-center text-gray-700"><span class="text-green-500 mr-3">✔</span> Limited access to **Genomic Pathogenicity**</li>
-                <li class="flex items-center text-gray-700"><span class="text-green-500 mr-3">✔</span> Basic **X-Ray Processing** (5/month)</li>
-                <li class="flex items-center text-gray-700"><span class="text-red-500 mr-3">✖</span> No dedicated support</li>
-                <li class="flex items-center text-gray-700"><span class="text-red-500 mr-3">✖</span> No access to **MRI Analysis**</li>
-              </ul>
-              
-              <a href="#" class="w-full text-center bg-gray-200 text-gray-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-300 transition duration-300 mt-auto">Get Started Free</a>
-            </div>
-    
-            <div class="bg-blue-600 p-8 rounded-lg shadow-2xl hover-scale flex flex-col items-center transform scale-105">
-              <p class="text-sm font-semibold text-white bg-green-400 px-3 py-1 rounded-full mb-3">MOST POPULAR</p>
-              <h3 class="text-2xl font-bold text-white mb-4">Pro Plan</h3>
-              <p class="text-5xl font-extrabold text-white mb-6">$99<span class="text-xl font-normal text-blue-200">/month</span></p>
-              <p class="text-center text-blue-200 mb-6">Unlock full module capabilities and advanced features.</p>
-              
-              <ul class="text-left w-full space-y-3 mb-8 text-white">
-                <li class="flex items-center"><span class="text-green-400 mr-3">✔</span> **Unlimited** core module access</li>
-                <li class="flex items-center"><span class="text-green-400 mr-3">✔</span> Enhanced **MRI Analysis** tools</li>
-                <li class="flex items-center"><span class="text-green-400 mr-3">✔</span> Priority email support</li>
-                <li class="flex items-center"><span class="text-green-400 mr-3">✔</span> Full **Genome-to-Phenotype** reports</li>
-              </ul>
-              
-              <a href="#" class="w-full text-center bg-white text-blue-600 px-6 py-3 rounded-full font-bold hover:bg-blue-100 transition duration-300 mt-auto">Choose Pro</a>
-            </div>
-    
-            <div class="bg-white p-8 rounded-lg shadow-xl hover-scale flex flex-col items-center">
-              <h3 class="text-2xl font-bold text-gray-700 mb-4">Enterprise</h3>
-              <p class="text-5xl font-extrabold text-blue-600 mb-6">Custom</p>
-              <p class="text-center text-gray-500 mb-6">For large organizations requiring tailored solutions.</p>
-              
-              <ul class="text-left w-full space-y-3 mb-8">
-                <li class="flex items-center text-gray-700"><span class="text-green-500 mr-3">✔</span> All Pro features **plus more**</li>
-                <li class="flex items-center text-gray-700"><span class="text-green-500 mr-3">✔</span> Custom **API Integration**</li>
-                <li class="flex items-center text-gray-700"><span class="text-green-500 mr-3">✔</span> Dedicated Account Manager</li>
-                <li class="flex items-center text-gray-700"><span class="text-green-500 mr-3">✔</span> On-premise deployment options</li>
-              </ul>
-              
-              <a href="#" class="w-full text-center bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 transition duration-300 mt-auto">Contact Sales</a>
-            </div>
-          </div>
+  <!-- Pricing Plans Section -->
+  <section class="py-16 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        <!-- Free Plan -->
+        <div class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800">
+          <h3 class="text-2xl font-bold text-center mb-4">Free</h3>
+          <p class="text-center text-gray-600 mb-4">$0 / month</p>
+          <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
+            <li>5 Genomic predictions/month</li>
+            <li>3 Angiography predictions/month</li>
+            <li>Basic support</li>
+            <li>Community access</li>
+          </ul>
+          <button onclick="buyService('free')" class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition duration-300 w-full">
+            Get Started Free
+          </button>
         </div>
-    </section>
-    
-    <footer class="bg-gray-800 text-white py-6">
-        <div class="container mx-auto text-center">
-            <p>&copy; 2025 BioAML. All rights reserved.</p>
+
+        <!-- Basic Plan -->
+        <div class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800 border-2 border-green-500">
+          <h3 class="text-2xl font-bold text-center mb-4">Basic</h3>
+          <p class="text-center text-gray-600 mb-4">$9.99 / month</p>
+          <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
+            <li>Unlimited genomic predictions</li>
+            <li>50 angiography predictions/month</li>
+            <li>Email support</li>
+            <li>Priority processing</li>
+          </ul>
+          <button onclick="buyService('basic')" class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 w-full">
+            Choose Basic
+          </button>
         </div>
-    </footer>
+
+        <!-- Premium Plan -->
+        <div class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800">
+          <h3 class="text-2xl font-bold text-center mb-4">Premium</h3>
+          <p class="text-center text-gray-600 mb-4">$29.99 / month</p>
+          <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
+            <li>Unlimited all predictions</li>
+            <li>Advanced analytics</li>
+            <li>24/7 priority support</li>
+            <li>API access</li>
+          </ul>
+          <button onclick="buyService('premium')" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 w-full">
+            Choose Premium
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer Section -->
+  <footer class="bg-gray-800 text-white py-6">
+    <div class="container mx-auto text-center">
+      <p>&copy; 2025 BioAML. All rights reserved.</p>
+      <a href="index.html" class="text-green-400 hover:underline">Back to Services</a>
+    </div>
+  </footer>
+
+  <!-- Animation Keyframes -->
+  <style>
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fade-in 1s ease-out;
+    }
+  </style>
+
+  <script>
+    function buyService(service) {
+      if (service === 'free') {
+        alert('Free plan activated! You can now access basic services.');
+        window.location.href = 'dashboard.html';
+      } else {
+        const plan = service === 'basic' ? 'Basic ($9.99/month)' : 'Premium ($29.99/month)';
+        const response = confirm(`Select ${plan} plan? \n\nPayment will be processed securely.`);
+        if (response) {
+          alert(`Payment successful for ${plan}! Welcome aboard!`);
+          window.location.href = 'dashboard.html';
+        }
+      }
+    }
+  </script>
 </body>
 </html>
