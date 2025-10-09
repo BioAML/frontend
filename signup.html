@@ -99,10 +99,32 @@
         messageBox.className = `p-3 text-sm rounded-lg text-center ${isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
         messageBox.style.display = 'block';
     }
-    
+
+    function redirectAfterSignup() {
+        console.log('Initiating redirect to index.html...');
+        const redirectPaths = ['/index.html', './index.html', '/'];
+        let redirectSuccess = false;
+
+        for (const path of redirectPaths) {
+            try {
+                console.log(`Trying redirect to: ${path}`);
+                window.location.replace(path); // Attempt redirect
+                redirectSuccess = true;
+                break; // Exit loop if successful
+            } catch (e) {
+                console.warn(`Redirect to ${path} failed:`, e);
+            }
+        }
+
+        if (!redirectSuccess) {
+            console.error('All redirect attempts failed. Manual intervention required.');
+            displayMessage('Redirect failed. Please click <a href="/index.html">here</a> to continue.', true);
+        }
+    }
+
     form.addEventListener('submit', async (e) => {
-        e.preventDefault(); // Prevent default form submission
-        console.log('Form submission prevented, starting signup process...');
+        e.preventDefault();
+        console.log('Form submission intercepted, starting signup process...');
 
         const name = document.getElementById('name').value;
         const email = document.getElementById('email').value;
@@ -120,17 +142,14 @@
         }
 
         try {
-            console.log('Attempting to create user with email:', email);
-            // 1. Create the user
+            console.log('Creating user with email:', email);
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-            console.log('User created successfully:', user.uid);
+            console.log('User created:', user.uid);
 
-            // 2. Set user display name
             await updateProfile(user, { displayName: name });
-            console.log('User profile updated with name:', name);
+            console.log('Profile updated with name:', name);
 
-            // 3. Save user data to Firestore
             const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/user_data/profile`);
             await setDoc(userDocRef, {
                 name: name,
@@ -140,18 +159,8 @@
             });
             console.log('User data saved to Firestore');
 
-            displayMessage(`✅ Success! Welcome, ${name}. Redirecting to main application...`);
-            
-            // 4. Redirect immediately
-            console.log('Redirecting to /index.html...');
-            window.location.replace('/index.html'); // Use replace to avoid back button issues
-            // Fallback in case the primary redirect fails
-            setTimeout(() => {
-                if (window.location.href.includes('signup.html')) {
-                    console.warn('Primary redirect failed, trying ./index.html...');
-                    window.location.replace('./index.html');
-                }
-            }, 1000);
+            displayMessage(`✅ Success! Welcome, ${name}. Redirecting...`);
+            redirectAfterSignup(); // Trigger redirect
 
         } catch (error) {
             console.error('Firebase Sign Up Error:', error);
