@@ -168,12 +168,15 @@
       animation: fade-in 1s ease-out;
     }
   </style>
+<script>
+    // 1. Initialize Stripe with your Public Key
+    // NOTE: REPLACE 'pk_test_YourPublishableKey' with your actual Stripe publishable key
+    const stripe = Stripe('pk_test_YourPublishableKey');
 
-  <script>
     let selectedServices = [];
     let selectedPlan = null;
 
-    // Service configuration with plan hierarchy
+    // Service configuration remains the same
     const services = {
         'genomic_pathogenicity': { name: '5 Genomic predictions/month', price: 0, plan: 'Free' },
         'angiography': { name: '3 Angiography predictions/month', price: 0, plan: 'Free' },
@@ -182,13 +185,13 @@
         'all_unlimited': { name: 'Unlimited all predictions', price: 29.99, plan: 'Premium' }
     };
 
-    // Plan priority (higher value = higher tier)
+    // Plan priority (higher value = higher tier) - Not directly used in the new checkout logic but kept for context
     const planPriority = { 'Free': 0, 'Basic': 1, 'Premium': 2 };
 
     function updateSelection() {
+        // ... (The updateSelection function remains the same as your original code) ...
         selectedServices = [];
 
-        // If no plan is selected, show no services
         if (!selectedPlan) {
             document.getElementById('selectedServices').innerHTML = '<p class="text-gray-500">No services selected yet.</p>';
             document.getElementById('totalPrice').textContent = '$0.00';
@@ -196,7 +199,6 @@
             return;
         }
 
-        // Collect services for the selected plan
         document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
             const serviceId = checkbox.value;
             const service = services[serviceId];
@@ -205,10 +207,8 @@
             }
         });
 
-        // Calculate total based on the selected plan's price
         const total = selectedServices.length > 0 ? selectedServices[0].price : 0;
 
-        // Update selected services list
         const selectedList = document.getElementById('selectedServices');
         if (selectedServices.length === 0) {
             selectedList.innerHTML = '<p class="text-gray-500">No services selected yet.</p>';
@@ -222,11 +222,10 @@
                 ).join('');
         }
 
-        // Update total price
         document.getElementById('totalPrice').textContent = `$${total.toFixed(2)}`;
-
-        // Enable/disable checkout button
-        document.getElementById('checkoutBtn').disabled = selectedServices.length === 0;
+        
+        // Only enable checkout if a paid plan is selected
+        document.getElementById('checkoutBtn').disabled = (selectedPlan === 'Free' || selectedServices.length === 0);
     }
 
     // Event listeners for plan buttons
@@ -237,18 +236,52 @@
         });
     });
 
-    // Checkout button
-    document.getElementById('checkoutBtn').addEventListener('click', () => {
-        if (selectedServices.length === 0) return;
-
-        const total = selectedServices[0].price; // Price of the selected plan
-        const servicesList = selectedServices.map(s => `${s.name} (${s.plan})`).join(', ');
-        
-        const response = confirm(`Proceed to checkout for:\n\n${servicesList}\n\nTotal: $${total.toFixed(2)}\n\nPayment will be processed securely.`);
-        
-        if (response) {
-            alert('Payment successful! Welcome to BioAML. Redirecting to dashboard...');
+    // 2. MODIFIED Checkout button logic for Stripe integration
+    document.getElementById('checkoutBtn').addEventListener('click', async () => {
+        if (selectedPlan === 'Free' || !selectedPlan) {
+            alert('The Free plan does not require checkout. You can proceed.');
             window.location.href = 'dashboard.html';
+            return;
+        }
+
+        const button = document.getElementById('checkoutBtn');
+        button.disabled = true;
+        button.textContent = 'Processing...';
+
+        try {
+            // A. Call your server to create a Stripe Checkout Session
+            // NOTE: REPLACE THE URL WITH YOUR ACTUAL SERVER ENDPOINT
+            const response = await fetch('/api/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ plan: selectedPlan }), // Send the selected plan ID
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const session = await response.json();
+            
+            // B. Redirect to Stripe Checkout page
+            const result = await stripe.redirectToCheckout({
+                sessionId: session.id, // Use the Session ID returned by your server
+            });
+
+            if (result.error) {
+                // If the redirect fails due to a client-side error
+                alert(`Error: ${result.error.message}`);
+                console.error(result.error);
+            }
+        } catch (e) {
+            alert('An error occurred during checkout. Please try again.');
+            console.error('Checkout error:', e);
+        } finally {
+            // Re-enable the button regardless of success or failure
+            button.disabled = false;
+            button.textContent = 'Proceed to Checkout';
         }
     });
 </script>
