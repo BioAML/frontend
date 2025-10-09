@@ -37,7 +37,8 @@
         }
         return gk_fileData[filename] || "";
         }
-        </script><!DOCTYPE html>
+</script>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -80,17 +81,17 @@
           <p class="text-center text-gray-600 mb-4">$0 / month</p>
           <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
             <li class="flex items-center space-x-2">
-              <input type="checkbox" id="free_genomic_pathogenicity" class="h-5 w-5 text-blue-600" value="genomic_pathogenicity" data-price="0">
+              <input type="checkbox" id="free_genomic_pathogenicity" class="h-5 w-5 text-blue-600" value="genomic_pathogenicity" data-price="0" checked disabled>
               <label for="free_genomic_pathogenicity">5 Genomic predictions/month</label>
             </li>
             <li class="flex items-center space-x-2">
-              <input type="checkbox" id="free_angiography" class="h-5 w-5 text-green-600" value="angiography" data-price="0">
+              <input type="checkbox" id="free_angiography" class="h-5 w-5 text-green-600" value="angiography" data-price="0" checked disabled>
               <label for="free_angiography">3 Angiography predictions/month</label>
             </li>
             <li>Basic support</li>
             <li>Community access</li>
           </ul>
-          <button class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition duration-300 w-full">Get Started</button>
+          <button class="plan-btn bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition duration-300 w-full" data-plan="Free">Get Started</button>
         </div>
 
         <!-- Basic Plan -->
@@ -99,17 +100,17 @@
           <p class="text-center text-gray-600 mb-4">$9.99 / month</p>
           <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
             <li class="flex items-center space-x-2">
-              <input type="checkbox" id="basic_genomic_unlimited" class="h-5 w-5 text-blue-600" value="genomic_unlimited" data-price="9.99">
+              <input type="checkbox" id="basic_genomic_unlimited" class="h-5 w-5 text-blue-600" value="genomic_unlimited" data-price="9.99" checked disabled>
               <label for="basic_genomic_unlimited">Unlimited genomic predictions</label>
             </li>
             <li class="flex items-center space-x-2">
-              <input type="checkbox" id="basic_angiography_50" class="h-5 w-5 text-green-600" value="angiography_50" data-price="9.99">
+              <input type="checkbox" id="basic_angiography_50" class="h-5 w-5 text-green-600" value="angiography_50" data-price="9.99" checked disabled>
               <label for="basic_angiography_50">50 angiography predictions/month</label>
             </li>
             <li>Email support</li>
             <li>Priority processing</li>
           </ul>
-          <button class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 w-full">Choose Basic</button>
+          <button class="plan-btn bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 w-full" data-plan="Basic">Choose Basic</button>
         </div>
 
         <!-- Premium Plan -->
@@ -118,14 +119,14 @@
           <p class="text-center text-gray-600 mb-4">$29.99 / month</p>
           <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
             <li class="flex items-center space-x-2">
-              <input type="checkbox" id="premium_all_unlimited" class="h-5 w-5 text-blue-600" value="all_unlimited" data-price="29.99">
+              <input type="checkbox" id="premium_all_unlimited" class="h-5 w-5 text-blue-600" value="all_unlimited" data-price="29.99" checked disabled>
               <label for="premium_all_unlimited">Unlimited all predictions</label>
             </li>
             <li>Advanced analytics</li>
             <li>24/7 priority support</li>
             <li>API access</li>
           </ul>
-          <button class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 w-full">Choose Premium</button>
+          <button class="plan-btn bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 w-full" data-plan="Premium">Choose Premium</button>
         </div>
       </div>
 
@@ -169,6 +170,7 @@
 
   <script>
     let selectedServices = [];
+    let selectedPlan = null;
 
     // Service configuration with plan hierarchy
     const services = {
@@ -182,56 +184,41 @@
     // Plan priority (higher value = higher tier)
     const planPriority = { 'Free': 0, 'Basic': 1, 'Premium': 2 };
 
-    // Event listeners for checkboxes
-    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', updateSelection);
-    });
-
     function updateSelection() {
         selectedServices = [];
-        let total = 0;
-        let highestPlan = 'Free'; // Default to Free plan
 
-        // Determine the highest plan selected
+        // If no plan is selected, show no services
+        if (!selectedPlan) {
+            document.getElementById('selectedServices').innerHTML = '<p class="text-gray-500">No services selected yet.</p>';
+            document.getElementById('totalPrice').textContent = '$0.00';
+            document.getElementById('checkoutBtn').disabled = true;
+            return;
+        }
+
+        // Collect services for the selected plan
         document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
             const serviceId = checkbox.value;
             const service = services[serviceId];
-            if (service) {
+            if (service && service.plan === selectedPlan) {
                 selectedServices.push(service);
-                if (planPriority[service.plan] > planPriority[highestPlan]) {
-                    highestPlan = service.plan;
-                }
             }
         });
 
-        // Calculate total based on highest plan and additional services
-        total = services[selectedServices.find(s => s.plan === highestPlan)?.value || 'genomic_pathogenicity']?.price || 0;
-        selectedServices.forEach(service => {
-            if (service.plan === highestPlan) {
-                total += service.price; // Add price for services within the highest plan
-            }
-        });
-
-        // Disable lower-tier checkboxes based on highest plan
-        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-            const service = services[checkbox.value];
-            if (service) {
-                checkbox.disabled = planPriority[service.plan] < planPriority[highestPlan] && highestPlan !== 'Free';
-                if (checkbox.disabled) checkbox.checked = false; // Uncheck lower-tier options
-            }
-        });
+        // Calculate total based on the selected plan's price
+        const total = selectedServices.length > 0 ? selectedServices[0].price : 0;
 
         // Update selected services list
         const selectedList = document.getElementById('selectedServices');
         if (selectedServices.length === 0) {
             selectedList.innerHTML = '<p class="text-gray-500">No services selected yet.</p>';
         } else {
-            selectedList.innerHTML = selectedServices.map(service => 
-                `<div class="flex justify-between items-center p-2 bg-white rounded">
-                    <span>${service.name} (${service.plan})</span>
-                    <span class="text-green-600 font-semibold">$${service.price.toFixed(2)}</span>
-                </div>`
-            ).join('');
+            selectedList.innerHTML = selectedServices
+                .map(service => 
+                    `<div class="flex justify-between items-center p-2 bg-white rounded">
+                        <span>${service.name} (${service.plan})</span>
+                        <span class="text-green-600 font-semibold">$${service.price.toFixed(2)}</span>
+                    </div>`
+                ).join('');
         }
 
         // Update total price
@@ -241,11 +228,19 @@
         document.getElementById('checkoutBtn').disabled = selectedServices.length === 0;
     }
 
+    // Event listeners for plan buttons
+    document.querySelectorAll('.plan-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            selectedPlan = button.getAttribute('data-plan');
+            updateSelection();
+        });
+    });
+
     // Checkout button
     document.getElementById('checkoutBtn').addEventListener('click', () => {
         if (selectedServices.length === 0) return;
 
-        const total = selectedServices.reduce((sum, service) => sum + service.price, 0);
+        const total = selectedServices[0].price; // Price of the selected plan
         const servicesList = selectedServices.map(s => `${s.name} (${s.plan})`).join(', ');
         
         const response = confirm(`Proceed to checkout for:\n\n${servicesList}\n\nTotal: $${total.toFixed(2)}\n\nPayment will be processed securely.`);
