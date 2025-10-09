@@ -101,26 +101,9 @@
     }
 
     function redirectAfterSignup() {
-        console.log('Initiating redirect to index.html...');
-        const redirectPaths = ['/index.html', './index.html', '/'];
-        let redirectSuccess = false;
-
-        for (const path of redirectPaths) {
-            try {
-                console.log(`Trying redirect to: ${path}`);
-                window.location.replace(path); // Attempt redirect
-                redirectSuccess = true;
-                break; // Exit loop if successful
-            } catch (e) {
-                console.warn(`Redirect to ${path} failed:`, e);
-            }
-        }
-
-        if (!redirectSuccess) {
-            console.error('All redirect attempts failed. Manual intervention required.');
-            displayMessage('Redirect failed. Please click <a href="/index.html">here</a> to continue.', true);
-        }
+      window.location.href = "index.html";   // or the exact page you want
     }
+
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
