@@ -1,4 +1,43 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -40,14 +79,18 @@
           <h3 class="text-2xl font-bold text-center mb-4">Free</h3>
           <p class="text-center text-gray-600 mb-4">$0 / month</p>
           <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
-            <li>5 Genomic predictions/month</li>
-            <li>3 Angiography predictions/month</li>
+            <li class="flex items-center space-x-2">
+              <input type="checkbox" id="free_genomic_pathogenicity" class="h-5 w-5 text-blue-600" value="genomic_pathogenicity" data-price="0">
+              <label for="free_genomic_pathogenicity">5 Genomic predictions/month</label>
+            </li>
+            <li class="flex items-center space-x-2">
+              <input type="checkbox" id="free_angiography" class="h-5 w-5 text-green-600" value="angiography" data-price="0">
+              <label for="free_angiography">3 Angiography predictions/month</label>
+            </li>
             <li>Basic support</li>
             <li>Community access</li>
           </ul>
-          <button onclick="buyService('free')" class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition duration-300 w-full">
-            Get Started Free
-          </button>
+          <button class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition duration-300 w-full">Get Started</button>
         </div>
 
         <!-- Basic Plan -->
@@ -55,14 +98,18 @@
           <h3 class="text-2xl font-bold text-center mb-4">Basic</h3>
           <p class="text-center text-gray-600 mb-4">$9.99 / month</p>
           <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
-            <li>Unlimited genomic predictions</li>
-            <li>50 angiography predictions/month</li>
+            <li class="flex items-center space-x-2">
+              <input type="checkbox" id="basic_genomic_unlimited" class="h-5 w-5 text-blue-600" value="genomic_unlimited" data-price="9.99">
+              <label for="basic_genomic_unlimited">Unlimited genomic predictions</label>
+            </li>
+            <li class="flex items-center space-x-2">
+              <input type="checkbox" id="basic_angiography_50" class="h-5 w-5 text-green-600" value="angiography_50" data-price="9.99">
+              <label for="basic_angiography_50">50 angiography predictions/month</label>
+            </li>
             <li>Email support</li>
             <li>Priority processing</li>
           </ul>
-          <button onclick="buyService('basic')" class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 w-full">
-            Choose Basic
-          </button>
+          <button class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 w-full">Choose Basic</button>
         </div>
 
         <!-- Premium Plan -->
@@ -70,13 +117,31 @@
           <h3 class="text-2xl font-bold text-center mb-4">Premium</h3>
           <p class="text-center text-gray-600 mb-4">$29.99 / month</p>
           <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
-            <li>Unlimited all predictions</li>
+            <li class="flex items-center space-x-2">
+              <input type="checkbox" id="premium_all_unlimited" class="h-5 w-5 text-blue-600" value="all_unlimited" data-price="29.99">
+              <label for="premium_all_unlimited">Unlimited all predictions</label>
+            </li>
             <li>Advanced analytics</li>
             <li>24/7 priority support</li>
             <li>API access</li>
           </ul>
-          <button onclick="buyService('premium')" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 w-full">
-            Choose Premium
+          <button class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 w-full">Choose Premium</button>
+        </div>
+      </div>
+
+      <!-- Summary and Checkout -->
+      <div class="mt-12 max-w-4xl mx-auto bg-gray-50 p-6 rounded-lg shadow-lg">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Selection</h3>
+        <div id="selectedServices" class="mb-4 space-y-2">
+          <p class="text-gray-500">No services selected yet.</p>
+        </div>
+        <div class="border-t pt-4">
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-lg font-semibold">Total:</span>
+            <span id="totalPrice" class="text-xl font-bold text-green-600">$0.00</span>
+          </div>
+          <button id="checkoutBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+            Proceed to Checkout
           </button>
         </div>
       </div>
@@ -103,19 +168,93 @@
   </style>
 
   <script>
-    function buyService(service) {
-      if (service === 'free') {
-        alert('Free plan activated! You can now access basic services.');
-        window.location.href = 'dashboard.html';
-      } else {
-        const plan = service === 'basic' ? 'Basic ($9.99/month)' : 'Premium ($29.99/month)';
-        const response = confirm(`Select ${plan} plan? \n\nPayment will be processed securely.`);
-        if (response) {
-          alert(`Payment successful for ${plan}! Welcome aboard!`);
-          window.location.href = 'dashboard.html';
+    let selectedServices = [];
+
+    // Service configuration with plan hierarchy
+    const services = {
+        'genomic_pathogenicity': { name: '5 Genomic predictions/month', price: 0, plan: 'Free' },
+        'angiography': { name: '3 Angiography predictions/month', price: 0, plan: 'Free' },
+        'genomic_unlimited': { name: 'Unlimited genomic predictions', price: 9.99, plan: 'Basic' },
+        'angiography_50': { name: '50 angiography predictions/month', price: 9.99, plan: 'Basic' },
+        'all_unlimited': { name: 'Unlimited all predictions', price: 29.99, plan: 'Premium' }
+    };
+
+    // Plan priority (higher value = higher tier)
+    const planPriority = { 'Free': 0, 'Basic': 1, 'Premium': 2 };
+
+    // Event listeners for checkboxes
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+
+    function updateSelection() {
+        selectedServices = [];
+        let total = 0;
+        let highestPlan = 'Free'; // Default to Free plan
+
+        // Determine the highest plan selected
+        document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+            const serviceId = checkbox.value;
+            const service = services[serviceId];
+            if (service) {
+                selectedServices.push(service);
+                if (planPriority[service.plan] > planPriority[highestPlan]) {
+                    highestPlan = service.plan;
+                }
+            }
+        });
+
+        // Calculate total based on highest plan and additional services
+        total = services[selectedServices.find(s => s.plan === highestPlan)?.value || 'genomic_pathogenicity']?.price || 0;
+        selectedServices.forEach(service => {
+            if (service.plan === highestPlan) {
+                total += service.price; // Add price for services within the highest plan
+            }
+        });
+
+        // Disable lower-tier checkboxes based on highest plan
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            const service = services[checkbox.value];
+            if (service) {
+                checkbox.disabled = planPriority[service.plan] < planPriority[highestPlan] && highestPlan !== 'Free';
+                if (checkbox.disabled) checkbox.checked = false; // Uncheck lower-tier options
+            }
+        });
+
+        // Update selected services list
+        const selectedList = document.getElementById('selectedServices');
+        if (selectedServices.length === 0) {
+            selectedList.innerHTML = '<p class="text-gray-500">No services selected yet.</p>';
+        } else {
+            selectedList.innerHTML = selectedServices.map(service => 
+                `<div class="flex justify-between items-center p-2 bg-white rounded">
+                    <span>${service.name} (${service.plan})</span>
+                    <span class="text-green-600 font-semibold">$${service.price.toFixed(2)}</span>
+                </div>`
+            ).join('');
         }
-      }
+
+        // Update total price
+        document.getElementById('totalPrice').textContent = `$${total.toFixed(2)}`;
+
+        // Enable/disable checkout button
+        document.getElementById('checkoutBtn').disabled = selectedServices.length === 0;
     }
-  </script>
+
+    // Checkout button
+    document.getElementById('checkoutBtn').addEventListener('click', () => {
+        if (selectedServices.length === 0) return;
+
+        const total = selectedServices.reduce((sum, service) => sum + service.price, 0);
+        const servicesList = selectedServices.map(s => `${s.name} (${s.plan})`).join(', ');
+        
+        const response = confirm(`Proceed to checkout for:\n\n${servicesList}\n\nTotal: $${total.toFixed(2)}\n\nPayment will be processed securely.`);
+        
+        if (response) {
+            alert('Payment successful! Welcome to BioAML. Redirecting to dashboard...');
+            window.location.href = 'dashboard.html';
+        }
+    });
+</script>
 </body>
 </html>
