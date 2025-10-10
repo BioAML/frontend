@@ -6,21 +6,26 @@
     <title>BioAML Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js for progress visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
+        /* Enhanced Gradient for Header (Keeping original colors for contrast) */
         .header-bg { background: linear-gradient(105deg, #1d4ed8, #059669); }
         .card { transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
         .card:hover { transform: translateY(-3px); box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.15); }
+        /* Styling for the Prediction Activity chart */
         #activityGraphContainer { height: 28rem; }
+        
+        /* Modal Overlay Styling */
         .modal-overlay {
             background-color: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(4px);
-            z-index: 50;
+            z-index: 50; /* Above all other content */
         }
         .progress-bar {
             height: 10px;
-            border-radius: 9999px;
+            border-radius: 9999px; /* Full rounded corners */
             overflow: hidden;
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
@@ -33,16 +38,22 @@
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <h1 class="text-3xl font-extrabold tracking-tight">BioAML</h1>
             <div class="flex items-center space-x-6">
+                
+                <!-- User Profile and Logout Dropdown/Button -->
                 <div id="userMenu" class="relative group">
                     <button class="flex items-center space-x-2 text-white p-2 rounded-xl hover:bg-white/20 transition duration-200">
+                        <!-- User Icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <span class="text-xl font-medium" id="userName">Loading...</span>
+                        <span class="text-xl font-medium" id="userName">Loading...</span> <!-- Dynamic User Name -->
+                        <!-- Chevron Down -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
+                    
+                    <!-- Dropdown Menu -->
                     <div class="absolute right-0 mt-2 w-56 bg-white text-gray-800 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform scale-95 group-hover:scale-100 origin-top-right z-30">
                         <div class="p-3 border-b">
                             <p class="text-sm font-semibold">Logged in as:</p>
-                            <p class="text-xs text-gray-600 truncate" id="userEmail">Loading...</p>
+                            <p class="text-xs text-gray-600 truncate" id="userEmail">Loading...</p> <!-- Dynamic User Email/ID -->
                         </div>
                         <a href="#" onclick="alert('Logged out successfully!'); window.location.href='index.html';" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-xl">
                             Logout
@@ -53,27 +64,34 @@
         </div>
     </header>
 
-    <!-- Main Content Area -->
+    <!-- Main Content Area with Sidebar Placeholder -->
     <div class="flex flex-1 pt-6">
+        
+        <!-- Sidebar (Placeholder for navigation) -->
         <aside class="w-64 bg-white p-6 shadow-2xl sticky top-24 h-[calc(100vh-6rem)] hidden lg:block">
             <nav class="space-y-4">
                 <a href="#" class="flex items-center p-3 text-green-600 font-bold bg-green-50 rounded-lg shadow-sm">
+                    <!-- Home Icon (Color changed to match new theme) -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     Dashboard
                 </a>
                 <a href="#" class="flex items-center p-3 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">
+                    <!-- Reports Icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
                     Reports
                 </a>
                 <a href="#" class="flex items-center p-3 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">
+                    <!-- Settings Icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.39a2 2 0 0 0 .73 2.73l.15.08a2 2 0 0 1 1 1.73v.56a2 2 0 0 1-1 1.73l-.15.08a2 2 0 0 0-.73 2.73l.22.39a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.73v-.56a2 2 0 0 1 1-1.73l.15-.08a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2-0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                     Settings
                 </a>
             </nav>
         </aside>
 
-        <!-- Main Content -->
+        <!-- Main Content (Adjusted padding for the new layout) -->
         <main class="flex-1 lg:ml-6 px-4 pb-10">
+
+            <!-- Simulation Warning -->
             <div id="simulationWarning" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-8 rounded-xl shadow-lg" role="alert">
                 <p class="font-bold">Dashboard Simulation Active: Layered Subscriptions</p>
                 <p class="text-sm">The dashboard is currently combining data from all active subscriptions.</p>
@@ -82,23 +100,37 @@
                 </button>
             </div>
             
+            <!-- 2. Individual Module Usage Summary (New Grid Section) -->
             <div class="mb-10">
+                <!-- Added a margin-top since the previous card is gone -->
                 <h3 class="text-2xl font-bold mb-4 text-gray-800 mt-4">Module Usage Summary</h3>
-                <div id="moduleGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                <!-- Dynamic grid for individual module cards -->
+                <div id="moduleGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Module cards will be dynamically generated here -->
+                </div>
                 <div id="noModulesMessage" class="text-center text-gray-500 py-12" style="display:none;">
                     <p class="text-xl font-semibold">No active modules found.</p>
                     <p class="text-base mt-2">Visit the <a href="pricing.html" class="text-green-600 underline hover:text-green-700">Pricing Page</a> to purchase a module.</p>
                 </div>
             </div>
 
+
+            <!-- 3. Activity Graph of Last 1 Month -->
             <div class="bg-white p-6 rounded-xl shadow-xl mb-10">
                 <h3 class="text-2xl font-bold mb-6 border-b pb-2">Prediction Activity (Last 4 Weeks)</h3>
-                <div id="activityGraphContainer" class="p-4 bg-gray-50 rounded-lg border border-gray-200"></div>
+                
+                <div id="activityGraphContainer" class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <!-- Graph content will be dynamically generated here -->
+                </div>
+                
             </div>
 
+            <!-- 4. Stored Prediction Analysis -->
             <div class="bg-white p-6 rounded-xl shadow-xl">
                 <h3 class="text-2xl font-bold mb-4 border-b pb-2">Stored Prediction Analysis</h3>
+                
                 <div id="storedAnalysisList" class="space-y-4">
+                    <!-- Analysis items will be dynamically generated here -->
                     <p id="noAnalysisMessage" class="text-center text-gray-500 py-8">No analyses found for your current services.</p>
                 </div>
             </div>
@@ -112,52 +144,70 @@
         </div>
     </footer>
 
-    <!-- Progress Tracking Modal -->
+    <!-- Progress Tracking Modal (Unchanged) -->
     <div id="progressModal" class="fixed inset-0 hidden items-center justify-center modal-overlay transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl m-4 transform scale-95 opacity-0 transition-all duration-300" id="progressModalContent">
+            
+            <!-- Modal Header -->
             <div class="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
-                <h3 class="text-xl font-extrabold text-green-600" id="progressModalTitle">Prediction Progress</h3>
-                <button id="closeProgressModalBtn" class="text-gray-400 hover:text-gray-700">
+                <h3 class="text-xl font-extrabold text-green-600">Angiography Prediction Progress</h3>
+                <button onclick="closeProgressModal()" class="text-gray-400 hover:text-gray-700">
+                    <!-- Close Icon (X) -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
+            
+            <!-- Modal Body (Chart Container) -->
             <div class="p-6">
-                <p class="text-sm text-gray-600 mb-4" id="progressModalDescription">
+                <p class="text-sm text-gray-600 mb-4">
                     Track your prediction scores over time. A rising line suggests improved accuracy and proficiency in your input data.
                 </p>
                 <div class="h-80 w-full">
-                    <canvas id="progressChart" style="display: none;"></canvas>
-                    <p id="noProgressDataMessage" class="text-center text-gray-500 py-8" style="display: none;">
-                        No progress data available for this module.
-                    </p>
+                    <canvas id="progressChart"></canvas>
                 </div>
             </div>
+
+            <!-- Modal Footer -->
             <div class="p-4 border-t text-right">
-                <button id="closeProgressModalFooterBtn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition duration-200">
+                <button onclick="closeProgressModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition duration-200">
                     Close
                 </button>
             </div>
         </div>
     </div>
 
+
     <script type="module">
+        // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Firebase Globals
         let auth, db;
+        
+        // Configuration Check
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
 
+        // --- NAME HANDLING LOGIC ---
+
+        // Helper function to extract a query parameter from the URL
         function getUrlParameter(name) {
             name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
             var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
             var results = regex.exec(location.search);
             return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
         }
-
+        
+        // Get the name from the URL (simulating passing it from the sign-up page)
         const nameFromUrl = getUrlParameter('name');
-        const defaultPlaceholderName = "Guest User";
+        const defaultPlaceholderName = "Jane Doe (Signed Up)";
+        const nameToSet = nameFromUrl || defaultPlaceholderName;
+        
+        // --- END NAME HANDLING LOGIC ---
 
+
+        // Initialize and Authenticate
         async function initializeFirebaseAndAuthenticate() {
             try {
                 if (Object.keys(firebaseConfig).length > 0) {
@@ -167,6 +217,8 @@
                     setLogLevel('Debug');
 
                     let currentUser;
+
+                    // 1. Sign in (using token or anonymously)
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
                         currentUser = userCredential.user;
@@ -174,46 +226,58 @@
                         const userCredential = await signInAnonymously(auth);
                         currentUser = userCredential.user;
                     }
-
+                    
+                    // 2. CRITICAL: Save the name to the user's profile if it's new (or passed via URL)
+                    // In a real sign-up page, you would do this immediately after 'createUserWithEmailAndPassword'
                     if (currentUser && (!currentUser.displayName || nameFromUrl)) {
-                        const nameToSet = nameFromUrl || defaultPlaceholderName;
                         console.log(`Setting displayName to: ${nameToSet}`);
-                        await updateProfile(currentUser, { displayName: nameToSet });
-                        await auth.currentUser.reload();
+                        await updateProfile(currentUser, {
+                            displayName: nameToSet
+                        });
+                        // IMPORTANT: Get the updated user object after setting the profile
                         currentUser = auth.currentUser;
                     }
-
+                    
                     loadUserInfo(currentUser);
                 } else {
+                    // Fallback for environments without Firebase support
                     console.warn("Firebase config not available. Using simulated user data.");
                     loadUserInfo({
                         email: "simulated.user@bioaml.com",
                         uid: crypto.randomUUID(),
-                        displayName: nameFromUrl || defaultPlaceholderName
+                        displayName: nameToSet // Use the determined name in fallback
                     });
                 }
             } catch (e) {
                 console.error("Firebase authentication failed:", e);
+                // Fallback on error
                 loadUserInfo({
                     email: "auth.error@bioaml.com",
                     uid: "auth-error",
-                    displayName: nameFromUrl || "Authentication Failed"
+                    displayName: "Authentication Failed"
                 });
             }
         }
 
+        // Function to update the UI with user info
         function loadUserInfo(user) {
             if (user) {
+                // We PRIORITIZE reading the name from user.displayName (where it was saved by updateProfile)
                 const nameText = user.displayName || user.email || `User #${user.uid.substring(0, 8)}`;
-                const emailText = user.email || `UID: ${user.uid}`;
+                const emailText = user.email || `UID: ${user.uid}`; // Use UID for email fallback if not present
+
                 document.getElementById('userName').textContent = nameText;
                 document.getElementById('userEmail').textContent = emailText;
             } else {
-                document.getElementById('userName').textContent = defaultPlaceholderName;
+                // Default if no user object is passed
+                document.getElementById('userName').textContent = "Guest User";
                 document.getElementById('userEmail').textContent = "Please log in";
             }
         }
 
+        // --- REST OF THE APPLICATION LOGIC (UNCHANGED) ---
+
+        // --- UPDATED SERVICE STYLES: ALL GREEN ---
         const SERVICE_STYLES = {
             'Genomic': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<path d="M12 2l10 20-10-5-10 5 10-20z"/><path d="M12 2v20"/>' },
             'Angiography': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0-7 17l.95-.95"/><path d="M12 2a10 10 0 0 1 7 17l-.95-.95"/>' },
@@ -221,26 +285,17 @@
             'Default': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<circle cx="12" cy="12" r="10"/>' }
         };
 
-        const PROGRESS_REPORTS = {
-            'Angiography': [
-                { id: 'A100', type: 'Angiography', result: 'Fair (65)', date: '2025-09-20', score: 65 },
-                { id: 'A101', type: 'Angiography', result: 'Medium (70)', date: '2025-09-22', score: 70 },
-                { id: 'A102', type: 'Angiography', result: 'Good (80)', date: '2025-09-25', score: 80 },
-                { id: 'A103', type: 'Angiography', result: 'Very Good (88)', date: '2025-09-28', score: 88 },
-                { id: 'A104', type: 'Angiography', result: 'Excellent (95)', date: '2025-10-02', score: 95 },
-            ],
-            'Genomic': [
-                { id: 'G100', type: 'Genomic', result: 'Low Risk (60)', date: '2025-09-21', score: 60 },
-                { id: 'G101', type: 'Genomic', result: 'Moderate Risk (75)', date: '2025-09-24', score: 75 },
-                { id: 'G102', type: 'Genomic', result: 'High Risk (85)', date: '2025-09-27', score: 85 },
-            ],
-            'Radiology': [
-                { id: 'R100', type: 'Radiology', result: 'Low Confidence (55)', date: '2025-09-23', score: 55 },
-                { id: 'R101', type: 'Radiology', result: 'Moderate Confidence (70)', date: '2025-09-26', score: 70 },
-                { id: 'R102', type: 'Radiology', result: 'High Confidence (90)', date: '2025-09-29', score: 90 },
-            ]
-        };
-
+        // Simulated data for Angiography progress reports (used for the chart)
+        const ANGIOGRAPHY_PROGRESS_REPORTS = [
+            { id: 'A100', type: 'Angiography', result: 'Fair (65)', date: '2025-09-20', score: 65 },
+            { id: 'A101', type: 'Angiography', result: 'Medium (70)', date: '2025-09-22', score: 70 },
+            { id: 'A102', type: 'Angiography', result: 'Good (80)', date: '2025-09-25', score: 80 },
+            { id: 'A103', type: 'Angiography', result: 'Very Good (88)', date: '2025-09-28', score: 88 },
+            { id: 'A104', type: 'Angiography', result: 'Excellent (95)', date: '2025-10-02', score: 95 },
+        ];
+        
+        
+        // CATALOG OF ALL POSSIBLE PLANS/ADD-ONS
         const PLANS_CATALOG = {
             'core_research_plan': {
                 name: "Core Research Plan",
@@ -251,7 +306,7 @@
                     Angiography: { limit: 50, used: 18, total_used: [5, 4, 3, 6] },
                 },
                 reports: [
-                    ...PROGRESS_REPORTS['Angiography'],
+                    ...ANGIOGRAPHY_PROGRESS_REPORTS,
                     { id: 'G00123', type: 'Genomic', title: 'Pathogenicity Report', result: 'High Risk (85%)', date: '2025-09-28', color: 'text-red-600' },
                 ]
             },
@@ -277,16 +332,23 @@
             }
         };
 
+        // --- SIMULATION SCENARIOS ---
         const SUBSCRIPTION_SCENARIOS = [
+            // Scenario 1: Basic Core Plan (Genomic + Angiography)
             { key: 'Core Research Plan', subscriptions: ['core_research_plan'] },
+            // Scenario 2: Core Plan + Radiology Add-on (All 3 Modules)
             { key: 'Core + Radiology Pro', subscriptions: ['core_research_plan', 'radiology_addon'] },
+            // Scenario 3: Layered Quota (Core + Angiography Booster)
             { key: 'Layered Quota Active', subscriptions: ['core_research_plan', 'angiography_booster'] },
+            // Scenario 4: No Paid Subscriptions
             { key: 'Free Tier (No Paid Subs)', subscriptions: [] }
         ];
 
-        let currentScenarioIndex = 0;
-        let progressChartInstance = null;
-
+        let currentScenarioIndex = 0; 
+        let progressChartInstance = null; 
+        
+        
+        // --- CORE LOGIC TO AGGREGATE SUBSCRIPTIONS (Unchanged) ---
         function aggregateUserDataFromSubscriptions(subscriptionKeys) {
             const aggregatedData = {
                 activePlans: [],
@@ -305,15 +367,20 @@
                 plan.services.forEach(service => {
                     aggregatedData.services.add(service);
                     const newQuota = plan.quota[service];
+                    
                     if (!aggregatedData.quota[service]) {
                         aggregatedData.quota[service] = { ...newQuota };
                     } else {
                         let existingQuota = aggregatedData.quota[service];
+                        
+                        // Merge Limits
                         if (existingQuota.limit === null || newQuota.limit === null) {
                             existingQuota.limit = null;
                         } else {
                             existingQuota.limit += newQuota.limit;
                         }
+                        
+                        // Merge total_used arrays
                         if (existingQuota.total_used && newQuota.total_used) {
                             for (let i = 0; i < existingQuota.total_used.length; i++) {
                                 existingQuota.total_used[i] += newQuota.total_used[i];
@@ -327,13 +394,18 @@
             return aggregatedData;
         }
 
+        /**
+         * Renders the main dashboard content based on the active plans.
+         */
         function renderDashboard(scenario) {
             const data = aggregateUserDataFromSubscriptions(scenario.subscriptions);
+            
             renderModuleCards(data);
             renderActivityGraph(data.quota, data.services);
             renderStoredAnalysis(data.reports);
         }
 
+        // --- UTILITY FUNCTIONS (Unchanged) ---
         function getServiceStyle(serviceName) {
             return SERVICE_STYLES[serviceName] || SERVICE_STYLES.Default;
         }
@@ -342,11 +414,11 @@
             const moduleGrid = document.getElementById('moduleGrid');
             const noModulesMessage = document.getElementById('noModulesMessage');
             let modulesHtml = '';
-
+            
             if (data.services.length === 0) {
-                moduleGrid.innerHTML = '';
-                noModulesMessage.style.display = 'block';
-                return;
+                 moduleGrid.innerHTML = '';
+                 noModulesMessage.style.display = 'block';
+                 return;
             }
             noModulesMessage.style.display = 'none';
 
@@ -359,34 +431,52 @@
                 const limit = quota.limit;
                 const remainingText = isUnlimited ? 'Unlimited' : `${limit - used} remaining`;
                 const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
-
+                
                 const style = getServiceStyle(service);
 
                 let progressBarColor = `bg-${style.color}-600`;
                 if (!isUnlimited && percentageUsed > 80) {
-                    progressBarColor = 'bg-red-500';
+                    progressBarColor = 'bg-red-500'; 
                 }
 
-                const moduleSpecificActions = `
-                    <a href="${service.toLowerCase()}.html" class="px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md flex-grow text-center transform hover:scale-[1.01] w-1/3">
-                        New Prediction
-                    </a>
-                    <button class="view-progress-btn px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm flex-grow text-center w-1/3" data-service="${service}">
-                        View Progress
-                    </button>
-                    <a href="pricing.html" class="px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm flex-grow text-center w-1/3">
+                let moduleSpecificActions = ``;
+
+                if (service === 'Angiography') {
+                    moduleSpecificActions = `
+                        <a href="${service.toLowerCase()}.html" class="px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md flex-grow text-center transform hover:scale-[1.01] w-1/2">
+                            New Prediction
+                        </a>
+                        <button onclick="showProgressModal()" class="px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm flex-grow text-center w-1/2">
+                            View Progress
+                        </button>
+                    `;
+                } else {
+                    moduleSpecificActions = `
+                        <a href="${service.toLowerCase()}.html" class="px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md flex-grow text-center transform hover:scale-[1.01] w-full">
+                            New Prediction
+                        </a>
+                    `;
+                }
+                
+                const manageSubscriptionButton = `
+                    <a href="pricing.html" class="px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 w-full shadow-sm text-center flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                         Manage Subscription
                     </a>
                 `;
 
                 modulesHtml += `
                     <div class="card bg-white p-6 rounded-xl shadow-xl border-t-8 ${style.primaryBorder} flex flex-col justify-between">
+                        <!-- Module Header -->
                         <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-100">
                             <h3 class="text-2xl font-extrabold text-gray-900">${service} Module</h3>
+                            <!-- Dynamic Icon (Now consistently Green) -->
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-500">
                                 ${style.icon}
                             </svg>
                         </div>
+
+                        <!-- Usage Stats -->
                         <div class="mb-4">
                             <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Monthly Usage</p>
                             <div class="flex items-end justify-between">
@@ -396,31 +486,32 @@
                                 </span>
                             </div>
                         </div>
+
+                        <!-- Progress Bar & Details -->
                         <div class="space-y-2 mb-6">
                             <p class="text-sm text-gray-600 font-medium">${remainingText} left</p>
                             <div class="progress-bar bg-gray-200">
                                 <div class="${progressBarColor}" style="width: ${percentageUsed}%;"></div>
                             </div>
                         </div>
-                        <div class="flex space-x-3 pt-3 border-t border-gray-100 pb-3">
+                        
+                        <!-- Action Buttons - Module Specific -->
+                        <div class="flex ${service === 'Angiography' ? 'space-x-3' : ''} pt-3 border-t border-gray-100 pb-3">
                             ${moduleSpecificActions}
                         </div>
+                        
+                        <!-- Action Button - Subscription Management (White/Gray style) -->
+                        ${manageSubscriptionButton}
+
                     </div>
                 `;
             });
             moduleGrid.innerHTML = modulesHtml;
-
-            // Add event listeners for View Progress buttons
-            document.querySelectorAll('.view-progress-btn').forEach(button => {
-                button.addEventListener('click', () => {
-                    const service = button.getAttribute('data-service');
-                    showProgressModal(service);
-                });
-            });
         }
 
         function renderActivityGraph(quotaData, activeServices) {
             const container = document.getElementById('activityGraphContainer');
+            
             const weeklyData = {};
             let maxCount = 1;
 
@@ -430,6 +521,7 @@
                     const count = dataPoints[i];
                     weeklyData[i] = weeklyData[i] || {};
                     weeklyData[i][service] = count;
+                    
                     const totalForWeek = Object.values(weeklyData[i]).reduce((a, b) => a + b, 0);
                     if (totalForWeek > maxCount) {
                         maxCount = totalForWeek;
@@ -444,7 +536,8 @@
             for (let i = 0; i < totalWeeks; i++) {
                 const weekCounts = weeklyData[i] || {};
                 const totalCount = Object.values(weekCounts).reduce((a, b) => a + b, 0);
-                const totalHeight = (totalCount / maxCount) * 200;
+                
+                const totalHeight = (totalCount / maxCount) * 200; 
 
                 let segmentsHtml = '';
                 let cumulativeHeight = 0;
@@ -452,18 +545,25 @@
                 activeServices.slice().reverse().forEach((service) => {
                     const count = weekCounts[service] || 0;
                     if (count > 0) {
-                        const style = getServiceStyle(service);
+                        const style = getServiceStyle(service); 
                         const segmentHeight = totalCount > 0 ? (count / totalCount) * totalHeight : 0;
-                        let roundedClass = cumulativeHeight === 0 ? 'rounded-t-lg' : '';
+                        
+                        let roundedClass = '';
+                        if (cumulativeHeight === 0) {
+                             roundedClass = 'rounded-t-lg'; 
+                        }
+
                         segmentsHtml = `
-                            <div class="chart-bar w-10 ${roundedClass}" 
+                            <div class="chart-bar w-100 ${roundedClass}" 
                                 style="height: ${segmentHeight}px; min-height: 2px; background-color: ${style.hex}; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" 
                                 title="${count} ${service} Predictions">
                             </div>
                         ` + segmentsHtml;
+                        
                         cumulativeHeight += segmentHeight;
                     }
                 });
+
 
                 barsHtml += `
                     <div class="flex flex-col items-center group relative h-full">
@@ -490,7 +590,9 @@
 
             const graphContent = `
                 <div class="flex justify-around items-end h-72 p-4 space-x-12 relative">
+                    <!-- Y-Axis Marker (Max count) -->
                     <span class="absolute left-0 top-0 text-xs font-semibold text-gray-500">Max: ${maxCount}</span>
+                    <!-- The Bars -->
                     ${barsHtml}
                 </div>
                 <div class="flex justify-center space-x-8 text-sm text-gray-500 mt-10 p-2 border-t border-gray-200">
@@ -511,6 +613,7 @@
             }
 
             noMessage.style.display = 'none';
+            
             const sortedReports = reports.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             let reportsHtml = sortedReports.map(report => {
@@ -521,7 +624,9 @@
                 return `
                     <div class="p-5 border-l-4 ${style.primaryBorder} rounded-xl bg-white flex justify-between items-center shadow-lg hover:shadow-xl transition duration-300 hover:border-${style.color}-600">
                         <div class="flex items-center space-x-4">
+                            <!-- Report Icon -->
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-600"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            
                             <div>
                                 <p class="font-bold text-lg text-gray-900">${report.type} Analysis - [Ref: ${report.id}]</p>
                                 <p class="text-sm text-gray-600 mt-1">
@@ -540,138 +645,124 @@
 
             listContainer.innerHTML = reportsHtml;
         }
-
-        function showProgressModal(service) {
-            try {
-                const modal = document.getElementById('progressModal');
-                const modalContent = document.getElementById('progressModalContent');
-                const modalTitle = document.getElementById('progressModalTitle');
-                const progressChart = document.getElementById('progressChart');
-                const noProgressDataMessage = document.getElementById('noProgressDataMessage');
-
-                modalTitle.textContent = `${service} Prediction Progress`;
-                modal.style.display = 'flex';
-                setTimeout(() => {
-                    modal.classList.add('opacity-100');
-                    modalContent.classList.remove('scale-95', 'opacity-0');
-                    modalContent.classList.add('scale-100', 'opacity-100');
-                }, 10);
-
-                const reports = PROGRESS_REPORTS[service] || [];
-                if (reports.length === 0) {
-                    progressChart.style.display = 'none';
-                    noProgressDataMessage.style.display = 'block';
-                } else {
-                    progressChart.style.display = 'block';
-                    noProgressDataMessage.style.display = 'none';
-                    renderProgressChart(reports, service);
-                }
-            } catch (error) {
-                console.error(`Error showing progress modal for ${service}:`, error);
-                alert('Failed to display progress modal. Please try again.');
-            }
+        
+        // --- PROGRESS MODAL FUNCTIONS (Unchanged) ---
+        function showProgressModal() {
+            const modal = document.getElementById('progressModal');
+            const modalContent = document.getElementById('progressModalContent');
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            
+            renderProgressChart(ANGIOGRAPHY_PROGRESS_REPORTS);
         }
 
         function closeProgressModal() {
-            try {
-                const modal = document.getElementById('progressModal');
-                const modalContent = document.getElementById('progressModalContent');
-                modalContent.classList.remove('scale-100', 'opacity-100');
-                modalContent.classList.add('scale-95', 'opacity-0');
-                modal.classList.remove('opacity-100');
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                }, 300);
-            } catch (error) {
-                console.error('Error closing progress modal:', error);
-            }
+            const modal = document.getElementById('progressModal');
+            const modalContent = document.getElementById('progressModalContent');
+            
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            modal.classList.remove('opacity-100');
+            
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
         }
 
-        function renderProgressChart(reports, service) {
-            try {
-                if (progressChartInstance) {
-                    progressChartInstance.destroy();
-                }
+        function renderProgressChart(reports) {
+            if (progressChartInstance) {
+                progressChartInstance.destroy();
+            }
 
-                const chartData = reports.map((r, index) => ({
-                    x: `Pred. ${index + 1}`,
-                    y: r.score
-                }));
+            const chartData = reports.map((r, index) => ({
+                x: `Pred. ${index + 1}`,
+                y: r.score
+            }));
+            
+            const labels = chartData.map(d => d.x);
+            const scores = chartData.map(d => d.y);
 
-                const labels = chartData.map(d => d.x);
-                const scores = chartData.map(d => d.y);
-
-                const ctx = document.getElementById('progressChart').getContext('2d');
-
-                progressChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: `Prediction Score (%)`,
-                            data: scores,
-                            borderColor: getServiceStyle(service).hex,
-                            backgroundColor: `rgba(16, 185, 129, 0.1)`,
-                            tension: 0.4,
-                            pointRadius: 6,
-                            pointBackgroundColor: getServiceStyle(service).hex,
-                            pointHoverRadius: 8,
-                            fill: true,
-                        }]
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            
+            progressChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Prediction Score (%)',
+                        data: scores,
+                        borderColor: getServiceStyle('Angiography').hex,
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4, 
+                        pointRadius: 6,
+                        pointBackgroundColor: getServiceStyle('Angiography').hex,
+                        pointHoverRadius: 8,
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 50, 
+                            max: 100,
+                            title: { display: true, text: 'Score (%)' },
+                            grid: { color: 'rgba(0, 0, 0, 0.05)', }
+                        },
+                        x: {
+                            title: { display: true, text: 'Prediction Attempt' },
+                            grid: { display: false }
+                        }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                min: 50,
-                                max: 100,
-                                title: { display: true, text: 'Score (%)' },
-                                grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                            },
-                            x: {
-                                title: { display: true, text: 'Prediction Attempt' },
-                                grid: { display: false }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `Score: ${context.parsed.y}%`
                             }
                         },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => `Score: ${context.parsed.y}%`
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: `${service} Score Improvement Timeline`,
-                                font: { size: 16, weight: 'bold' }
-                            }
+                        title: {
+                            display: true,
+                            text: 'Angiography Score Improvement Timeline',
+                            font: { size: 16, weight: 'bold' }
                         }
                     }
-                });
-            } catch (error) {
-                console.error(`Error rendering progress chart for ${service}:`, error);
-                alert('Failed to render progress chart. Please try again.');
-            }
+                }
+            });
         }
 
+
+        // --- PLAN TOGGLE LOGIC FOR DEMO (Unchanged) ---
+        const togglePlanBtn = document.getElementById('togglePlanBtn');
+        
         function cyclePlan() {
             currentScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
             const currentScenario = SUBSCRIPTION_SCENARIOS[currentScenarioIndex];
+            
             const nextScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
             const nextScenarioName = SUBSCRIPTION_SCENARIOS[nextScenarioIndex].key;
-            document.getElementById('togglePlanBtn').textContent = `Click here to simulate the '${nextScenarioName}' scenario!`;
+            
+            togglePlanBtn.textContent = `Click here to simulate the '${nextScenarioName}' scenario!`;
+
             renderDashboard(currentScenario);
         }
 
-        document.getElementById('togglePlanBtn').addEventListener('click', cyclePlan);
-        document.getElementById('closeProgressModalBtn').addEventListener('click', closeProgressModal);
-        document.getElementById('closeProgressModalFooterBtn').addEventListener('click', closeProgressModal);
+        togglePlanBtn.addEventListener('click', cyclePlan);
 
+        // Initial setup on page load
         document.addEventListener('DOMContentLoaded', () => {
+            // 1. Authenticate user and load their name/email
             initializeFirebaseAndAuthenticate();
-            cyclePlan();
+            
+            // 2. Start the subscription simulation cycle
+            cyclePlan(); 
         });
+
     </script>
 </body>
 </html>
