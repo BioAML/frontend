@@ -234,43 +234,72 @@
       return;
     }
 
+    if (!currentUser) {
+      alert("⚠️ Please log in to use this tool.");
+      return;
+    }
+
+    // Check free tier limit (only 1 prediction)
+    const predictionsRef = collection(db, `users/${currentUser.uid}/predictions`);
+    const q = query(predictionsRef, where("module", "==", "Pathogenicity"));
+    const snapshot = await getCountFromServer(q);
+    const count = snapshot.data().count;
+
+    if (count >= 1) {
+      alert("⚠️ Free tier limit reached (1 prediction). Upgrade to continue.");
+      return; // Turn off/disable further predictions (eye logo implies "hide/disable")
+    }
+
     outputBox.style.display = "none";
     spinner.style.display = "block";
 
     let endpoint = inputType === "sequence" ? "/predict_sequence" : "/predict_accession";
-
     try {
-      const res = await fetch("https://vhbert.onrender.com" + endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seq: seq })
-      });
-
-      if (!res.ok) {
-        alert(`❌ Server Error ${res.status}`);
-        spinner.style.display = "none";
-        return;
+          const res = await fetch("https://vhbert.onrender.com" + endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ seq: seq })
+          });
+    
+          if (!res.ok) {
+            alert(`❌ Server Error ${res.status}`);
+            spinner.style.display = "none";
+            return;
+          }
+    
+          const data = await res.json();
+          spinner.style.display = "none";
+    
+          labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
+          scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
+          accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
+    
+          outputBox.style.display = "block";
+          renderGenome(
+            data.result.chunks,
+            data.result.genome_length,
+            data.result.annotations_gff,
+            data.sequence
+          );
+    
+          // Verify and store with consistent fields
+          if (currentUser) {
+            await addDoc(collection(db, `users/${currentUser.uid}/predictions`), {
+              module: "Pathogenicity",
+              date: new Date().toISOString(),
+              result: data.result.label_name || "Unknown",
+              score: data.result.confidence || 0,
+              id: crypto.randomUUID(),
+              accession: data.accession || "Sequence"
+            });
+            console.log("Successfully saved prediction for UID:", currentUser.uid);
+          }
+    
+        } catch (error) {
+          alert("❌ Network error: " + error.message);
+          spinner.style.display = "none";
+        }
       }
-
-      const data = await res.json();
-      spinner.style.display = "none";
-
-      labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
-      scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
-      accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
-
-      outputBox.style.display = "block";
-      renderGenome(
-      data.result.chunks,
-      data.result.genome_length,
-      data.result.annotations_gff,
-      data.sequence   // <-- pass actual DNA sequence
-    );
-    } catch (error) {
-      alert("❌ Network error: " + error.message);
-      spinner.style.display = "none";
-    }
-  }
 
   async function copyCitation() {
     const citation = `Decoding the Genomic Landscape of Viruses Using Deep Learning: An Integrated Analysis
@@ -343,89 +372,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
 </script>
 
 <!-- Modify the predict() function -->
-<script>
-  async function predict() {
-    const seq = document.getElementById("dnaInput").value.trim();
-    const inputType = document.querySelector('input[name="inputType"]:checked').value;
-    const spinner = document.getElementById("spinner");
-    const outputBox = document.getElementById("outputBox");
 
-    const labelLine = document.getElementById("labelLine");
-    const scoreLine = document.getElementById("scoreLine");
-    const accessionLine = document.getElementById("accessionLine");
-
-    if (!seq) {
-      alert("⚠️ Please enter a sequence or accession ID.");
-      return;
-    }
-
-    if (!currentUser) {
-      alert("⚠️ Please log in to use this tool.");
-      return;
-    }
-
-    // Check free tier limit (only 1 prediction)
-    const predictionsRef = collection(db, `users/${currentUser.uid}/predictions`);
-    const q = query(predictionsRef, where("module", "==", "Pathogenicity"));
-    const snapshot = await getCountFromServer(q);
-    const count = snapshot.data().count;
-
-    if (count >= 1) {
-      alert("⚠️ Free tier limit reached (1 prediction). Upgrade to continue.");
-      return; // Turn off/disable further predictions (eye logo implies "hide/disable")
-    }
-
-    outputBox.style.display = "none";
-    spinner.style.display = "block";
-
-    let endpoint = inputType === "sequence" ? "/predict_sequence" : "/predict_accession";
-    try {
-          const res = await fetch("https://vhbert.onrender.com" + endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ seq: seq })
-          });
-    
-          if (!res.ok) {
-            alert(`❌ Server Error ${res.status}`);
-            spinner.style.display = "none";
-            return;
-          }
-    
-          const data = await res.json();
-          spinner.style.display = "none";
-    
-          labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
-          scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
-          accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
-    
-          outputBox.style.display = "block";
-          renderGenome(
-            data.result.chunks,
-            data.result.genome_length,
-            data.result.annotations_gff,
-            data.sequence
-          );
-    
-          // Verify and store with consistent fields
-          if (currentUser) {
-            await addDoc(collection(db, `users/${currentUser.uid}/predictions`), {
-              module: "Pathogenicity",
-              date: new Date().toISOString(),
-              result: data.result.label_name || "Unknown",
-              score: data.result.confidence || 0,
-              id: crypto.randomUUID(),
-              accession: data.accession || "Sequence"
-            });
-            console.log("Successfully saved prediction for UID:", currentUser.uid);
-          }
-    
-        } catch (error) {
-          alert("❌ Network error: " + error.message);
-          spinner.style.display = "none";
-        }
-      }
-</script>
 
 <!-- Optional: Add hidden eye logo to indicate disabled state (e.g., after limit) -->
 <style>
