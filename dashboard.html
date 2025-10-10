@@ -601,41 +601,7 @@
             container.innerHTML = graphContent;
         }
 
-        function renderStoredAnalysis(reports) {
-            const listContainer = document.getElementById('storedAnalysisList');
-            const noMessage = document.getElementById('noAnalysisMessage');
-            if (reports.length === 0) {
-                listContainer.innerHTML = '';
-                noMessage.style.display = 'block';
-                return;
-            }
-            noMessage.style.display = 'none';
-            const sortedReports = reports.sort((a, b) => new Date(b.date) - new Date(a.date));
-            let reportsHtml = sortedReports.map(report => {
-                const style = getServiceStyle(report.type);
-                const linkPath = `${report.type.toLowerCase()}.html?id=${report.id}`;
-                const resultText = report.result || `Score: ${report.score}%`;
-                return `
-                    <div class="p-5 border-l-4 ${style.primaryBorder} rounded-xl bg-white flex justify-between items-center shadow-lg hover:shadow-xl transition duration-300 hover:border-${style.color}-600">
-                        <div class="flex items-center space-x-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-600"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                            <div>
-                                <p class="font-bold text-lg text-gray-900">${report.type} Analysis - [Ref: ${report.id}]</p>
-                                <p class="text-sm text-gray-600 mt-1">
-                                    Result: <span class="font-extrabold ${report.color || 'text-gray-900'}">${resultText}</span> 
-                                    <span class="ml-4 text-gray-400">|</span> 
-                                    <span class="ml-4">Completed on ${report.date}</span>
-                                </p>
-                            </div>
-                        </div>
-                        <a href="${linkPath}" class="text-green-500 hover:text-green-700 text-sm font-bold p-3 rounded-lg bg-green-50 hover:bg-green-100 transition duration-200 shadow-sm">
-                            View Details
-                        </a>
-                    </div>
-                `;
-            }).join('');
-            listContainer.innerHTML = reportsHtml;
-        }
+
 
         window.showProgressModal = function(module) {
             currentModule = module;
@@ -736,6 +702,71 @@
             initializeFirebaseAndAuthenticate();
             cyclePlan();
         });
+        async function fetchStoredAnalysisFromFirebase(uid) {
+            if (!db || !uid) return [];
+            const predictionsRef = collection(db, `users/${uid}/predictions`);
+            const snapshot = await getDocs(predictionsRef);
+            return snapshot.docs.map(doc => ({
+              id: doc.data().id,
+              type: doc.data().module,
+              date: doc.data().date,
+              result: doc.data().result,
+              score: doc.data().score,
+              color: doc.data().score > 0.5 ? 'text-red-600' : 'text-green-600' // Example based on pathogenicity score
+            }));
+          }
+        
+          // Update renderStoredAnalysis to use fetched data
+          async function renderStoredAnalysis() {
+            if (!auth.currentUser) return;
+            const reports = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
+            const listContainer = document.getElementById('storedAnalysisList');
+            const noMessage = document.getElementById('noAnalysisMessage');
+            if (reports.length === 0) {
+              listContainer.innerHTML = '';
+              noMessage.style.display = 'block';
+              return;
+            }
+            noMessage.style.display = 'none';
+            const sortedReports = reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+            let reportsHtml = sortedReports.map(report => {
+              const style = getServiceStyle(report.type);
+              const linkPath = `${report.type.toLowerCase()}.html?id=${report.id}`;
+              const resultText = report.result || `Score: ${(report.score * 100).toFixed(2)}%`;
+              return `
+                <div class="p-5 border-l-4 ${style.primaryBorder} rounded-xl bg-white flex justify-between items-center shadow-lg hover:shadow-xl transition duration-300 hover:border-${style.color}-600">
+                  <div class="flex items-center space-x-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-600"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <div>
+                      <p class="font-bold text-lg text-gray-900">${report.type} Analysis - [Ref: ${report.id}]</p>
+                      <p class="text-sm text-gray-600 mt-1">
+                        Result: <span class="font-extrabold ${report.color || 'text-gray-900'}">${resultText}</span> 
+                        <span class="ml-4 text-gray-400">|</span> 
+                        <span class="ml-4">Completed on ${report.date}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <a href="${linkPath}" class="text-green-500 hover:text-green-700 text-sm font-bold p-3 rounded-lg bg-green-50 hover:bg-green-100 transition duration-200 shadow-sm">
+                    View Details
+                  </a>
+                </div>
+              `;
+            }).join('');
+            listContainer.innerHTML = reportsHtml;
+          }
+        
+          // Call in initialize or on load
+          document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebaseAndAuthenticate();
+            renderStoredAnalysis(); // Replace simulated call
+            // cyclePlan(); // If keeping simulation, but prefer real data
+          });
+    </script>
+    <script type="module">
+      // Example: In aggregateUserDataFromSubscriptions, fetch real quotas
+      async function aggregateUserDataFromSubscriptions() {
+        // ... simulate or fetch from db.collection('users').doc(uid).get() for paidServices, quota, etc.
+      }
     </script>
 </body>
 </html>
