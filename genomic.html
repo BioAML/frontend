@@ -345,13 +345,15 @@
       }
     }
 
-    // Initialize and attach event listener
-    document.addEventListener('DOMContentLoaded', async () => {
-      await initializeAuth();
-      console.log("Initialized with UID:", currentUser ? currentUser.uid : "null");
-      document.getElementById("predictButton").addEventListener("click", predict);
-    });
-   window.predict = predict;
+      // Initialize and attach event listener
+      document.addEventListener('DOMContentLoaded', async () => {
+        await initializeAuth();
+        console.log("Initialized with UID:", currentUser ? currentUser.uid : "null");
+        // You already have a button with onclick, so this listener is optional
+      });
+    
+      // ✅ Add this line to make predict() callable from HTML onclick
+      window.predict = predict;
 </script>
 
 
