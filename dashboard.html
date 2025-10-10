@@ -706,18 +706,19 @@
             if (!db || !uid) return [];
             const predictionsRef = collection(db, `users/${uid}/predictions`);
             const snapshot = await getDocs(predictionsRef);
-            return snapshot.docs.map(doc => ({
+            const predictions = snapshot.docs.map(doc => ({
               id: doc.data().id,
               type: doc.data().module,
               date: doc.data().date,
               result: doc.data().result,
               score: doc.data().score,
-              color: doc.data().score > 0.5 ? 'text-red-600' : 'text-green-600' // Example based on pathogenicity score
+              color: doc.data().score > 0.5 ? 'text-red-600' : 'text-green-600'
             }));
+            return predictions.length > 0 ? predictions : []; // Ensure non-empty array
           }
         
           // Update renderStoredAnalysis to use fetched data
-          async function renderStoredAnalysis() {
+        async function renderStoredAnalysis() {
             if (!auth.currentUser) return;
             const reports = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
             const listContainer = document.getElementById('storedAnalysisList');
@@ -742,7 +743,7 @@
                       <p class="text-sm text-gray-600 mt-1">
                         Result: <span class="font-extrabold ${report.color || 'text-gray-900'}">${resultText}</span> 
                         <span class="ml-4 text-gray-400">|</span> 
-                        <span class="ml-4">Completed on ${report.date}</span>
+                        <span class="ml-4">Completed on ${new Date(report.date).toLocaleDateString()}</span>
                       </p>
                     </div>
                   </div>
@@ -755,11 +756,11 @@
             listContainer.innerHTML = reportsHtml;
           }
         
-          // Call in initialize or on load
+          // Ensure renderStoredAnalysis is called after authentication
           document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebaseAndAuthenticate();
-            renderStoredAnalysis(); // Replace simulated call
-            // cyclePlan(); // If keeping simulation, but prefer real data
+            initializeFirebaseAndAuthenticate().then(() => {
+              renderStoredAnalysis();
+            });
           });
     </script>
     <script type="module">
