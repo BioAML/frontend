@@ -44,16 +44,16 @@
                     <button class="flex items-center space-x-2 text-white p-2 rounded-xl hover:bg-white/20 transition duration-200">
                         <!-- User Icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <span class="text-xl font-medium" id="userName"></span> <!-- User Name Placeholder -->
+                        <span class="text-xl font-medium" id="userName">Loading...</span> <!-- Dynamic User Name -->
                         <!-- Chevron Down -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     
                     <!-- Dropdown Menu -->
-                    <div class="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform scale-95 group-hover:scale-100 origin-top-right z-30">
+                    <div class="absolute right-0 mt-2 w-56 bg-white text-gray-800 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform scale-95 group-hover:scale-100 origin-top-right z-30">
                         <div class="p-3 border-b">
                             <p class="text-sm font-semibold">Logged in as:</p>
-                            <p class="text-xs text-gray-600 truncate" id="userEmail"></p> <!-- User Email Placeholder -->
+                            <p class="text-xs text-gray-600 truncate" id="userEmail">Loading...</p> <!-- Dynamic User Email/ID -->
                         </div>
                         <a href="#" onclick="alert('Logged out successfully!'); window.location.href='index.html';" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-xl">
                             Logout
@@ -100,9 +100,6 @@
                 </button>
             </div>
             
-            <!-- THE SUBSCRIPTION STATUS CARD HAS BEEN REMOVED -->
-
-
             <!-- 2. Individual Module Usage Summary (New Grid Section) -->
             <div class="mb-10">
                 <!-- Added a margin-top since the previous card is gone -->
@@ -180,13 +177,111 @@
     </div>
 
 
-    <script>
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Globals
+        let auth, db;
+        
+        // Configuration Check
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+        // --- NAME HANDLING LOGIC ---
+
+        // Helper function to extract a query parameter from the URL
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+        
+        // Get the name from the URL (simulating passing it from the sign-up page)
+        const nameFromUrl = getUrlParameter('name');
+        const defaultPlaceholderName = "Jane Doe (Signed Up)";
+        const nameToSet = nameFromUrl || defaultPlaceholderName;
+        
+        // --- END NAME HANDLING LOGIC ---
+
+
+        // Initialize and Authenticate
+        async function initializeFirebaseAndAuthenticate() {
+            try {
+                if (Object.keys(firebaseConfig).length > 0) {
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    setLogLevel('Debug');
+
+                    let currentUser;
+
+                    // 1. Sign in (using token or anonymously)
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
+                        currentUser = userCredential.user;
+                    } else {
+                        const userCredential = await signInAnonymously(auth);
+                        currentUser = userCredential.user;
+                    }
+                    
+                    // 2. CRITICAL: Save the name to the user's profile if it's new (or passed via URL)
+                    // In a real sign-up page, you would do this immediately after 'createUserWithEmailAndPassword'
+                    if (currentUser && (!currentUser.displayName || nameFromUrl)) {
+                        console.log(`Setting displayName to: ${nameToSet}`);
+                        await updateProfile(currentUser, {
+                            displayName: nameToSet
+                        });
+                        // IMPORTANT: Get the updated user object after setting the profile
+                        currentUser = auth.currentUser;
+                    }
+                    
+                    loadUserInfo(currentUser);
+                } else {
+                    // Fallback for environments without Firebase support
+                    console.warn("Firebase config not available. Using simulated user data.");
+                    loadUserInfo({
+                        email: "simulated.user@bioaml.com",
+                        uid: crypto.randomUUID(),
+                        displayName: nameToSet // Use the determined name in fallback
+                    });
+                }
+            } catch (e) {
+                console.error("Firebase authentication failed:", e);
+                // Fallback on error
+                loadUserInfo({
+                    email: "auth.error@bioaml.com",
+                    uid: "auth-error",
+                    displayName: "Authentication Failed"
+                });
+            }
+        }
+
+        // Function to update the UI with user info
+        function loadUserInfo(user) {
+            if (user) {
+                // We PRIORITIZE reading the name from user.displayName (where it was saved by updateProfile)
+                const nameText = user.displayName || user.email || `User #${user.uid.substring(0, 8)}`;
+                const emailText = user.email || `UID: ${user.uid}`; // Use UID for email fallback if not present
+
+                document.getElementById('userName').textContent = nameText;
+                document.getElementById('userEmail').textContent = emailText;
+            } else {
+                // Default if no user object is passed
+                document.getElementById('userName').textContent = "Guest User";
+                document.getElementById('userEmail').textContent = "Please log in";
+            }
+        }
+
+        // --- REST OF THE APPLICATION LOGIC (UNCHANGED) ---
+
         // --- UPDATED SERVICE STYLES: ALL GREEN ---
-        // Defined a unified green style for all modules as requested.
         const SERVICE_STYLES = {
             'Genomic': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<path d="M12 2l10 20-10-5-10 5 10-20z"/><path d="M12 2v20"/>' },
             'Angiography': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0-7 17l.95-.95"/><path d="M12 2a10 10 0 0 1 7 17l-.95-.95"/>' },
-            'Radiology': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/>' },
+            'Radiology': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x="12" y="3" x2="12" y2="21"/>' },
             'Default': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<circle cx="12" cy="12" r="10"/>' }
         };
 
@@ -199,11 +294,6 @@
             { id: 'A104', type: 'Angiography', result: 'Excellent (95)', date: '2025-10-02', score: 95 },
         ];
         
-        // --- SIMULATED USER DATA ---
-        const USER_INFO = {
-            name: "Dr. Smith",
-            email: "smith@clinic.com"
-        };
         
         // CATALOG OF ALL POSSIBLE PLANS/ADD-ONS
         const PLANS_CATALOG = {
@@ -235,56 +325,30 @@
                 name: "Angiography Booster Pack",
                 description: "An extra 50 monthly predictions for the Angiography module.",
                 services: ['Angiography'],
-                // Important: this quota will be ADDED to any existing Angiography quota
                 quota: {
                     Angiography: { limit: 50, used: 0, total_used: [0, 0, 0, 0] },
                 },
-                reports: [] // No new reports from a booster pack, it just raises the limit
+                reports: []
             }
         };
 
-        // --- SIMULATION SCENARIOS (UPDATED DESCRIPTIONS) ---
+        // --- SIMULATION SCENARIOS ---
         const SUBSCRIPTION_SCENARIOS = [
             // Scenario 1: Basic Core Plan (Genomic + Angiography)
-            { 
-                key: 'Core Research Plan',
-                subscriptions: ['core_research_plan'],
-                // The description field is no longer used, but kept for simulation reference
-                description: "Standard access tier: Genomic and Angiography services active.",
-            },
+            { key: 'Core Research Plan', subscriptions: ['core_research_plan'] },
             // Scenario 2: Core Plan + Radiology Add-on (All 3 Modules)
-            {
-                key: 'Core + Radiology Pro',
-                subscriptions: ['core_research_plan', 'radiology_addon'],
-                // The description field is no longer used, but kept for simulation reference
-                description: "Enterprise access tier with Core Research Plan and Radiology Pro Add-on.",
-            },
+            { key: 'Core + Radiology Pro', subscriptions: ['core_research_plan', 'radiology_addon'] },
             // Scenario 3: Layered Quota (Core + Angiography Booster)
-            {
-                key: 'Layered Quota Active',
-                subscriptions: ['core_research_plan', 'angiography_booster'],
-                // The description field is no longer used, but kept for simulation reference
-                description: "Optimized access tier: Core Research Plan with Angiography Booster.",
-            },
+            { key: 'Layered Quota Active', subscriptions: ['core_research_plan', 'angiography_booster'] },
             // Scenario 4: No Paid Subscriptions
-            {
-                key: 'Free Tier (No Paid Subs)',
-                subscriptions: [],
-                // The description field is no longer used, but kept for simulation reference
-                description: "You are currently on the Free Tier with no active paid modules.",
-            }
+            { key: 'Free Tier (No Paid Subs)', subscriptions: [] }
         ];
 
         let currentScenarioIndex = 0; 
         let progressChartInstance = null; 
         
         
-        // --- CORE LOGIC TO AGGREGATE SUBSCRIPTIONS ---
-
-        /**
-         * Aggregates all services, quotas, and reports from an array of active subscription keys.
-         * This is where multi-plan data is merged.
-         */
+        // --- CORE LOGIC TO AGGREGATE SUBSCRIPTIONS (Unchanged) ---
         function aggregateUserDataFromSubscriptions(subscriptionKeys) {
             const aggregatedData = {
                 activePlans: [],
@@ -298,31 +362,25 @@
                 if (!plan) return;
 
                 aggregatedData.activePlans.push(plan.name);
-                
-                // Merge Reports
                 aggregatedData.reports.push(...plan.reports);
 
-                // Aggregate Services and Quotas
                 plan.services.forEach(service => {
                     aggregatedData.services.add(service);
-                    
                     const newQuota = plan.quota[service];
                     
                     if (!aggregatedData.quota[service]) {
-                        // First time seeing this service
                         aggregatedData.quota[service] = { ...newQuota };
                     } else {
-                        // Service already exists, merge the quotas (e.g., add limits)
                         let existingQuota = aggregatedData.quota[service];
                         
-                        // Merge Limits (null means unlimited, so we check if EITHER is unlimited)
+                        // Merge Limits
                         if (existingQuota.limit === null || newQuota.limit === null) {
-                            existingQuota.limit = null; // Stays unlimited if any plan grants it
+                            existingQuota.limit = null;
                         } else {
-                            existingQuota.limit += newQuota.limit; // Add limits together
+                            existingQuota.limit += newQuota.limit;
                         }
                         
-                        // Merge total_used arrays (for the graph) by adding them element-wise
+                        // Merge total_used arrays
                         if (existingQuota.total_used && newQuota.total_used) {
                             for (let i = 0; i < existingQuota.total_used.length; i++) {
                                 existingQuota.total_used[i] += newQuota.total_used[i];
@@ -332,7 +390,6 @@
                 });
             });
 
-            // Convert Set to Array and return the final data structure
             aggregatedData.services = Array.from(aggregatedData.services);
             return aggregatedData;
         }
@@ -341,32 +398,18 @@
          * Renders the main dashboard content based on the active plans.
          */
         function renderDashboard(scenario) {
-            // Aggregate all the necessary data from the active subscriptions
             const data = aggregateUserDataFromSubscriptions(scenario.subscriptions);
             
-            // NOTE: Logic for updating the removed Subscription Status Card has been removed here.
-            
-            // 2. Update Module Grid (Usage Summary)
             renderModuleCards(data);
-
-            // 3. Update Activity Graph
             renderActivityGraph(data.quota, data.services);
-
-            // 4. Update Stored Analysis
             renderStoredAnalysis(data.reports);
         }
 
-        // --- UTILITY FUNCTIONS (Simplified/Refactored) ---
-
-        // Get the specific style object for a service
+        // --- UTILITY FUNCTIONS (Unchanged) ---
         function getServiceStyle(serviceName) {
-            // Because all modules are requested to be green, we always return the green style
             return SERVICE_STYLES[serviceName] || SERVICE_STYLES.Default;
         }
 
-        /**
-         * Renders the individual, attractive module cards in a grid.
-         */
         function renderModuleCards(data) {
             const moduleGrid = document.getElementById('moduleGrid');
             const noModulesMessage = document.getElementById('noModulesMessage');
@@ -381,7 +424,6 @@
 
             data.services.forEach(service => {
                 const quota = data.quota[service];
-                // Handle cases where aggregation might leave quota undefined (shouldn't happen with current logic, but safe)
                 if (!quota) return;
 
                 const isUnlimited = quota.limit === null;
@@ -397,30 +439,19 @@
                     progressBarColor = 'bg-red-500'; 
                 }
 
-                let moduleSpecificActions = `
-                    <!-- New Prediction (Now consistently Green) -->
-                    <a href="${service.toLowerCase()}.html" class="px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md flex-grow text-center transform hover:scale-[1.01]">
-                        New Prediction
-                    </a>
-                `;
+                let moduleSpecificActions = ``;
 
-                // If Angiography, include the "View Progress" button, keeping it separate from the primary button
                 if (service === 'Angiography') {
-                    // Two buttons side-by-side in the top row: New Prediction (Green) and View Progress (White/Gray)
                     moduleSpecificActions = `
-                        <!-- New Prediction (Now consistently Green) -->
                         <a href="${service.toLowerCase()}.html" class="px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md flex-grow text-center transform hover:scale-[1.01] w-1/2">
                             New Prediction
                         </a>
-                        <!-- View Progress (White/Gray style - Module Specific) -->
                         <button onclick="showProgressModal()" class="px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm flex-grow text-center w-1/2">
                             View Progress
                         </button>
                     `;
                 } else {
-                     // For Genomic/Radiology, New Prediction takes the full top row width
                     moduleSpecificActions = `
-                        <!-- New Prediction (Now consistently Green) -->
                         <a href="${service.toLowerCase()}.html" class="px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md flex-grow text-center transform hover:scale-[1.01] w-full">
                             New Prediction
                         </a>
@@ -428,7 +459,6 @@
                 }
                 
                 const manageSubscriptionButton = `
-                    <!-- Manage Subscription (Changed to White/Gray style - Always full width below) -->
                     <a href="pricing.html" class="px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 w-full shadow-sm text-center flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                         Manage Subscription
@@ -507,27 +537,22 @@
                 const weekCounts = weeklyData[i] || {};
                 const totalCount = Object.values(weekCounts).reduce((a, b) => a + b, 0);
                 
-                // Calculate total bar height in pixels 
                 const totalHeight = (totalCount / maxCount) * 200; 
 
                 let segmentsHtml = '';
                 let cumulativeHeight = 0;
 
-                // Render segments in reverse order to ensure proper stacking
                 activeServices.slice().reverse().forEach((service) => {
                     const count = weekCounts[service] || 0;
                     if (count > 0) {
-                        // All styles are now green, but we use the style object to get the hex color
                         const style = getServiceStyle(service); 
                         const segmentHeight = totalCount > 0 ? (count / totalCount) * totalHeight : 0;
                         
                         let roundedClass = '';
-                        // Apply rounded top only to the very top segment (i.e., the first one rendered in the reverse loop)
                         if (cumulativeHeight === 0) {
                              roundedClass = 'rounded-t-lg'; 
                         }
 
-                        // Use hex color for background for safety in dynamic classes
                         segmentsHtml = `
                             <div class="chart-bar w-100 ${roundedClass}" 
                                 style="height: ${segmentHeight}px; min-height: 2px; background-color: ${style.hex}; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" 
@@ -551,9 +576,7 @@
                 `;
             }
 
-            // Generate Legend
             let legendHtml = '';
-            // Only show one entry in the legend if all modules share the same color for visual grouping
             if (activeServices.length > 0) {
                 const style = getServiceStyle(activeServices[0]);
                 legendHtml = activeServices.map(service => {
@@ -591,18 +614,17 @@
 
             noMessage.style.display = 'none';
             
-            // Sort reports by date (newest first)
             const sortedReports = reports.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             let reportsHtml = sortedReports.map(report => {
-                const style = getServiceStyle(report.type); // Will always be green now
+                const style = getServiceStyle(report.type);
                 const linkPath = `${report.type.toLowerCase()}.html?id=${report.id}`;
                 const resultText = report.result || `Score: ${report.score}%`;
 
                 return `
                     <div class="p-5 border-l-4 ${style.primaryBorder} rounded-xl bg-white flex justify-between items-center shadow-lg hover:shadow-xl transition duration-300 hover:border-${style.color}-600">
                         <div class="flex items-center space-x-4">
-                            <!-- Report Icon (Now consistently Green) -->
+                            <!-- Report Icon -->
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-600"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                             
                             <div>
@@ -624,8 +646,7 @@
             listContainer.innerHTML = reportsHtml;
         }
         
-        // --- PROGRESS MODAL FUNCTIONS (Simplified to fetch only the base reports) ---
-
+        // --- PROGRESS MODAL FUNCTIONS (Unchanged) ---
         function showProgressModal() {
             const modal = document.getElementById('progressModal');
             const modalContent = document.getElementById('progressModalContent');
@@ -636,7 +657,6 @@
                 modalContent.classList.add('scale-100', 'opacity-100');
             }, 10);
             
-            // For simplicity, progress chart uses the base Angiography report set
             renderProgressChart(ANGIOGRAPHY_PROGRESS_REPORTS);
         }
 
@@ -675,8 +695,8 @@
                     datasets: [{
                         label: 'Prediction Score (%)',
                         data: scores,
-                        borderColor: getServiceStyle('Angiography').hex, // Uses the unified green hex
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)', // Light green background
+                        borderColor: getServiceStyle('Angiography').hex,
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         tension: 0.4, 
                         pointRadius: 6,
                         pointBackgroundColor: getServiceStyle('Angiography').hex,
@@ -717,33 +737,29 @@
         }
 
 
-        // --- PLAN TOGGLE LOGIC FOR DEMO ---
+        // --- PLAN TOGGLE LOGIC FOR DEMO (Unchanged) ---
         const togglePlanBtn = document.getElementById('togglePlanBtn');
         
         function cyclePlan() {
-            // Cycle the index
             currentScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
             const currentScenario = SUBSCRIPTION_SCENARIOS[currentScenarioIndex];
             
-            // Determine the next scenario for the button text
             const nextScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
             const nextScenarioName = SUBSCRIPTION_SCENARIOS[nextScenarioIndex].key;
             
-            // Update the button text
             togglePlanBtn.textContent = `Click here to simulate the '${nextScenarioName}' scenario!`;
 
-            // Re-render the dashboard with the new aggregated plan data
             renderDashboard(currentScenario);
         }
 
         togglePlanBtn.addEventListener('click', cyclePlan);
 
-        // Initial render on page load
+        // Initial setup on page load
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('userName').textContent = USER_INFO.name;
-            document.getElementById('userEmail').textContent = USER_INFO.email;
+            // 1. Authenticate user and load their name/email
+            initializeFirebaseAndAuthenticate();
             
-            // Start the cycle (sets initial view to Scenario 1 and prepares button for Scenario 2)
+            // 2. Start the subscription simulation cycle
             cyclePlan(); 
         });
 
