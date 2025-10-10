@@ -335,11 +335,11 @@
         const PLANS_CATALOG = {
             'core_research_plan': {
                 name: "Core Research Plan",
-                description: "Includes unlimited Genomic analysis and standard Angiography access (30 monthly predictions).",
+                description: "Includes unlimited Genomic analysis and standard Angiography access (50 monthly predictions).",
                 services: ['Genomic', 'Angiography'],
                 quota: {
-                    Genomic: { limit: null, used: 0, total_used: [0, 0, 0, 0] },
-                    Angiography: { limit: 30, used: 0, total_used: [0, 0, 0, 0] },
+                    Genomic: { limit: null, used: 25, total_used: [10, 15, 8, 12] },
+                    Angiography: { limit: 50, used: 18, total_used: [5, 4, 3, 6] },
                 },
                 reports: [
                     ...PROGRESS_REPORTS['Angiography'],
@@ -348,10 +348,10 @@
             },
             'radiology_addon': {
                 name: "Radiology Pro Add-on",
-                description: "An add-on providing 30 monthly scans for the Radiology AI module.",
+                description: "An add-on providing 100 monthly scans for the Radiology AI module.",
                 services: ['Radiology'],
                 quota: {
-                    Radiology: { limit: 30, used: 0, total_used: [0, 0, 0, 0] }
+                    Radiology: { limit: 100, used: 55, total_used: [20, 15, 10, 10] }
                 },
                 reports: [
                     { id: 'R001', type: 'Radiology', title: 'MRI Scan Analysis', result: 'High Confidence', date: '2025-10-18', color: 'text-green-600' },
@@ -359,10 +359,10 @@
             },
             'angiography_booster': {
                 name: "Angiography Booster Pack",
-                description: "An extra 30 monthly predictions for the Angiography module.",
+                description: "An extra 50 monthly predictions for the Angiography module.",
                 services: ['Angiography'],
                 quota: {
-                    Angiography: { limit: 30, used: 0, total_used: [0, 0, 0, 0] },
+                    Angiography: { limit: 50, used: 0, total_used: [0, 0, 0, 0] },
                 },
                 reports: []
             }
@@ -378,9 +378,14 @@
 
         // Define Free Tier Quotas and usage for unsubscribed services
         const FREE_TIER_QUOTAS = {
-            'Angiography': { limit: 3, used: 0, total_used: [0, 0, 0, 0], isExpired: false },
-            'Genomic': { limit: 3, used: 0, total_used: [0, 0, 0, 0], isExpired: false },
-            'Radiology': { limit: 3, used: 0, total_used: [0, 0, 0, 0], isExpired: false }
+            // Test Case: Angiography is EXPIRED (used >= limit)
+            'Angiography': { limit: 5, used: 5, total_used: [1, 1, 1, 2], isExpired: true }, 
+            
+            // Genomic is still active
+            'Genomic': { limit: 5, used: 3, total_used: [1, 1, 1, 0], isExpired: false },     
+            
+            // Radiology is not used
+            'Radiology': { limit: 5, used: 0, total_used: [0, 0, 0, 0], isExpired: false }
         };
         
         // ... PLANS_CATALOG definition follows ...
@@ -390,7 +395,7 @@
 
         // dashboard (7).html (around line 496)
         
-        async function aggregateUserDataFromSubscriptions(subscriptionKeys) {
+        function aggregateUserDataFromSubscriptions(subscriptionKeys) {
             const aggregatedData = {
                 activePlans: [],
                 services: new Set(),
@@ -399,35 +404,6 @@
                 paidServices: new Set() // Tracks which services are covered by paid plans
             };
             
-            // Fetch real-time predictions from Firebase
-            let userPredictions = [];
-            if (auth?.currentUser) {
-                userPredictions = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
-            }
-
-            // Count predictions per module
-            const counts = {};
-            const weeklyCountsByService = {};
-            const now = new Date('2025-10-11');
-            const fourWeeksAgo = new Date(now);
-            fourWeeksAgo.setDate(now.getDate() - 28);
-            Object.keys(SERVICE_STYLES).forEach(service => {
-                if (service === 'Default') return;
-                counts[service] = 0;
-                weeklyCountsByService[service] = [0, 0, 0, 0];
-            });
-            userPredictions.forEach(p => {
-                counts[p.type] = (counts[p.type] || 0) + 1;
-                const pDate = new Date(p.date);
-                if (pDate >= fourWeeksAgo) {
-                    const daysAgo = Math.floor((now - pDate) / 86400000);
-                    const weekIndex = Math.floor(daysAgo / 7);
-                    if (weekIndex < 4) {
-                        weeklyCountsByService[p.type][3 - weekIndex]++;
-                    }
-                }
-            });
-
             // 1. Process Paid Subscriptions
             subscriptionKeys.forEach(key => {
                 const plan = PLANS_CATALOG[key];
@@ -442,12 +418,7 @@
                     
                     // Aggregation logic for paid services
                     if (!aggregatedData.quota[service]) {
-                        aggregatedData.quota[service] = { 
-                            limit: newQuota.limit, 
-                            used: counts[service] || 0, 
-                            total_used: weeklyCountsByService[service] || [0, 0, 0, 0], 
-                            isFree: false 
-                        };
+                        aggregatedData.quota[service] = { ...newQuota, isFree: false };
                     } else {
                         let existingQuota = aggregatedData.quota[service];
                         if (existingQuota.limit === null || newQuota.limit === null) {
@@ -455,8 +426,11 @@
                         } else {
                             existingQuota.limit += newQuota.limit;
                         }
-                        existingQuota.used = counts[service] || 0;
-                        existingQuota.total_used = weeklyCountsByService[service] || [0, 0, 0, 0];
+                        if (existingQuota.total_used && newQuota.total_used) {
+                            for (let i = 0; i < existingQuota.total_used.length; i++) {
+                                existingQuota.total_used[i] += newQuota.total_used[i];
+                            }
+                        }
                     }
                 });
             });
@@ -471,112 +445,96 @@
                 if (!aggregatedData.paidServices.has(service) && freeQuota && !freeQuota.isExpired) {
                     aggregatedData.services.add(service);
                     aggregatedData.quota[service] = { 
-                        limit: freeQuota.limit, 
-                        used: counts[service] || 0, 
-                        total_used: weeklyCountsByService[service] || [0, 0, 0, 0], 
+                        ...freeQuota, 
                         isFree: true 
                     };
-                    // Update isExpired based on Firebase data
-                    if (freeQuota.limit !== null && counts[service] >= freeQuota.limit) {
-                        freeQuota.isExpired = true;
-                        aggregatedData.quota[service].isExpired = true;
-                    }
                 }
             });
         
             aggregatedData.services = Array.from(aggregatedData.services);
-            aggregatedData.reports = userPredictions.filter(p => aggregatedData.services.includes(p.type));
             return aggregatedData;
         }
 
         async function renderDashboard(scenario) {
-            const data = await aggregateUserDataFromSubscriptions(scenario.subscriptions);
-            renderModuleCards(data);
-            renderActivityGraph(data.quota, data.services);
-            renderStoredAnalysis(data.reports);
+          const data = aggregateUserDataFromSubscriptions(scenario.subscriptions);
+          await renderModuleCards(data);
+          renderActivityGraph(data.quota, data.services);
+          renderStoredAnalysis();
         }
 
         function getServiceStyle(serviceName) {
             return SERVICE_STYLES[serviceName] || SERVICE_STYLES.Default;
         }
-
-        function renderModuleCards(data) {
-            const moduleGrid = document.getElementById('moduleGrid');
-            const noModulesMessage = document.getElementById('noModulesMessage');
-            let modulesHtml = '';
-            if (data.services.length === 0) {
-                moduleGrid.innerHTML = '';
-                noModulesMessage.style.display = 'block';
-                return;
-            }
-            noModulesMessage.style.display = 'none';
-            data.services.forEach(service => {
-                const quota = data.quota[service];
-                if (!quota) return;
-                const isUnlimited = quota.limit === null;
-                const used = quota.used;
-                const limit = quota.limit;
-                const remainingText = isUnlimited ? 'Unlimited' : `${Math.max(0, limit - used)} remaining`;
-                const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
-                const style = getServiceStyle(service);
-                let progressBarColor = `bg-${style.color}-600`;
-                if (!isUnlimited && percentageUsed > 80) {
-                    progressBarColor = 'bg-red-500';
-                }
-                let newPredictionButton;
-                if (!isUnlimited && used >= limit) {
-                    newPredictionButton = `
-                        <button disabled class="btn-flex px-3 py-2 text-sm font-bold rounded-lg bg-gray-400 text-white cursor-not-allowed transition duration-200 shadow-md text-center">
-                            New Prediction (Limit Reached)
-                        </button>
-                    `;
-                } else {
-                    newPredictionButton = `
-                        <a href="${service.toLowerCase()}.html" class="btn-flex px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md text-center transform hover:scale-105">
-                            New Prediction
-                        </a>
-                    `;
-                }
-                const moduleSpecificActions = `
-                    <div class="flex space-x-3">
-                        ${newPredictionButton}
-                        <button onclick="showProgressModal('${service}')" class="btn-flex px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm text-center">
-                            View Progress
-                        </button>
-                    </div>
-                    <div class="mt-3">
-                        <a href="pricing.html?module=${service}" class="px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm w-full text-center flex items-center justify-center block">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                            Manage Subscription
-                        </a>
-                    </div>
-                `;
-                modulesHtml += `
-                    <div class="card bg-white p-6 rounded-xl shadow-xl border-t-8 ${style.primaryBorder} flex flex-col justify-between">
-                        <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-100">
-                            <h3 class="text-2xl font-extrabold text-gray-900">${service} Module</h3>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-500">${style.icon}</svg>
-                        </div>
-                        <div class="mb-4">
-                            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Monthly Usage</p>
-                            <div class="flex items-end justify-between">
-                                <span class="text-4xl font-black text-gray-900">${used}</span>
-                                <span class="text-xl font-bold ${isUnlimited ? 'text-green-600' : 'text-gray-500'}">${isUnlimited ? 'Unlimited' : `/ ${limit}`}</span>
-                            </div>
-                        </div>
-                        <div class="space-y-2 mb-6">
-                            <p class="text-sm text-gray-600 font-medium">${remainingText} left</p>
-                            <div class="progress-bar bg-gray-200 relative">
-                                <div class="${progressBarColor} absolute top-0 left-0 h-full" style="width: ${percentageUsed}%;"></div>
-                            </div>
-                        </div>
-                        <div class="pt-3 border-t border-gray-100">
-                            ${moduleSpecificActions}
-                        </div>
-                    </div>
-                `;
-            });
-            moduleGrid.innerHTML = modulesHtml;
+        async function renderModuleCards(data) {
+          const moduleGrid = document.getElementById('moduleGrid');
+          const noModulesMessage = document.getElementById('noModulesMessage');
+          let modulesHtml = '';
+          if (data.services.length === 0) {
+            moduleGrid.innerHTML = '';
+            noModulesMessage.style.display = 'block';
+            return;
+          }
+          noModulesMessage.style.display = 'none';
+        
+          const { counts } = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
+        
+          data.services.forEach(service => {
+            const quota = data.quota[service];
+            if (!quota) return;
+            const isUnlimited = quota.limit === null;
+            const used = quota.used;
+            const limit = quota.limit;
+            const remainingText = isUnlimited ? 'Unlimited' : `${limit - used} remaining`;
+            const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
+            const style = getServiceStyle(service);
+        
+            // Check if the prediction button should be disabled
+            const predictionCount = counts[service] || 0;
+            const isFreeLimitReached = predictionCount >= 3;
+            const buttonDisabledClass = isFreeLimitReached ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
+        
+            const moduleSpecificActions = `
+              <div class="flex space-x-3">
+                <a href="${service.toLowerCase()}.html" class="btn-flex px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md text-center transform hover:scale-105 ${buttonDisabledClass}">
+                  New Prediction
+                </a>
+                <button onclick="showProgressModal('${service}')" class="btn-flex px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm text-center">
+                  View Progress
+                </button>
+              </div>
+              <div class="mt-3">
+                <a href="pricing.html?module=${service}" class="px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm w-full text-center flex items-center justify-center block">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  Manage Subscription
+                </a>
+              </div>
+            `;
+            modulesHtml += `
+              <div class="card bg-white p-6 rounded-xl shadow-xl border-t-8 ${style.primaryBorder} flex flex-col justify-between">
+                <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-100">
+                  <h3 class="text-2xl font-extrabold text-gray-900">${service} Module</h3>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-500">${style.icon}</svg>
+                </div>
+                <div class="mb-4">
+                  <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Monthly Usage</p>
+                  <div class="flex items-end justify-between">
+                    <span class="text-4xl font-black text-gray-900">${used}</span>
+                    <span class="text-xl font-bold ${isUnlimited ? 'text-green-600' : 'text-gray-500'}">${isUnlimited ? 'Unlimited' : `/ ${limit}`}</span>
+                  </div>
+                </div>
+                <div class="space-y-2 mb-6">
+                  <p class="text-sm text-gray-600 font-medium">${remainingText} left</p>
+                  <div class="progress-bar bg-gray-200 relative">
+                    <div class="bg-${style.color}-600 absolute top-0 left-0 h-full" style="width: ${percentageUsed}%;"></div>
+                  </div>
+                </div>
+                <div class="pt-3 border-t border-gray-100">
+                  ${moduleSpecificActions}
+                </div>
+              </div>
+            `;
+          });
+          moduleGrid.innerHTML = modulesHtml;
         }
 
         function renderActivityGraph(quotaData, activeServices) {
@@ -735,13 +693,13 @@
         }
 
         const togglePlanBtn = document.getElementById('togglePlanBtn');
-        async function cyclePlan() {
+        function cyclePlan() {
             currentScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
             const currentScenario = SUBSCRIPTION_SCENARIOS[currentScenarioIndex];
             const nextScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
             const nextScenarioName = SUBSCRIPTION_SCENARIOS[nextScenarioIndex].key;
             togglePlanBtn.textContent = `Click here to simulate the '${nextScenarioName}' scenario!`;
-            await renderDashboard(currentScenario);
+            renderDashboard(currentScenario);
         }
         togglePlanBtn.addEventListener('click', cyclePlan);
         document.addEventListener('DOMContentLoaded', () => {
@@ -749,19 +707,30 @@
             cyclePlan();
         });
         async function fetchStoredAnalysisFromFirebase(uid) {
-            if (!db || !uid) return [];
-            const predictionsRef = collection(db, `users/${uid}/predictions`);
-            const snapshot = await getDocs(predictionsRef);
-            const predictions = snapshot.docs.map(doc => ({
-              id: doc.data().id,
-              type: doc.data().module,
-              date: doc.data().date,
-              result: doc.data().result,
-              score: doc.data().score,
-              color: doc.data().score > 0.5 ? 'text-red-600' : 'text-green-600'
-            }));
-            return predictions.length > 0 ? predictions : []; // Ensure non-empty array
-          }
+          if (!db || !uid) return { predictions: [], counts: {} };
+          const predictionsRef = collection(db, `users/${uid}/predictions`);
+          const snapshot = await getDocs(predictionsRef);
+          const predictions = snapshot.docs.map(doc => ({
+            id: doc.data().id,
+            type: doc.data().module,
+            date: doc.data().date,
+            result: doc.data().result,
+            score: doc.data().score,
+            color: doc.data().score > 0.5 ? 'text-red-600' : 'text-green-600'
+          }));
+        
+          // Count predictions for each module
+          const counts = {};
+          predictions.forEach(prediction => {
+            if (!counts[prediction.type]) {
+              counts[prediction.type] = 1;
+            } else {
+              counts[prediction.type]++;
+            }
+          });
+        
+          return { predictions, counts };
+        }
         
           // Update renderStoredAnalysis to use fetched data
         async function renderStoredAnalysis() {
