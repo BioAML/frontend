@@ -317,6 +317,126 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
   }
 </style>
 
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getFirestore, collection, addDoc, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
+    authDomain: "bioaml.firebaseapp.com",
+    projectId: "bioaml",
+    storageBucket: "bioaml.firebasestorage.app",
+    messagingSenderId: "778735157645",
+    appId: "1:778735157645:web:1f1580bb3596c0aa18fdc4",
+    measurementId: "G-3KLFW5G4P3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUser = null;
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+  });
+</script>
+
+<!-- Modify the predict() function -->
+<script>
+  async function predict() {
+    const seq = document.getElementById("dnaInput").value.trim();
+    const inputType = document.querySelector('input[name="inputType"]:checked').value;
+    const spinner = document.getElementById("spinner");
+    const outputBox = document.getElementById("outputBox");
+
+    const labelLine = document.getElementById("labelLine");
+    const scoreLine = document.getElementById("scoreLine");
+    const accessionLine = document.getElementById("accessionLine");
+
+    if (!seq) {
+      alert("⚠️ Please enter a sequence or accession ID.");
+      return;
+    }
+
+    if (!currentUser) {
+      alert("⚠️ Please log in to use this tool.");
+      return;
+    }
+
+    // Check free tier limit (only 1 prediction)
+    const predictionsRef = collection(db, `users/${currentUser.uid}/predictions`);
+    const q = query(predictionsRef, where("module", "==", "Pathogenicity"));
+    const snapshot = await getCountFromServer(q);
+    const count = snapshot.data().count;
+
+    if (count >= 1) {
+      alert("⚠️ Free tier limit reached (1 prediction). Upgrade to continue.");
+      return; // Turn off/disable further predictions (eye logo implies "hide/disable")
+    }
+
+    outputBox.style.display = "none";
+    spinner.style.display = "block";
+
+    let endpoint = inputType === "sequence" ? "/predict_sequence" : "/predict_accession";
+
+    try {
+      const res = await fetch("https://vhbert.onrender.com" + endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seq: seq })
+      });
+
+      if (!res.ok) {
+        alert(`❌ Server Error ${res.status}`);
+        spinner.style.display = "none";
+        return;
+      }
+
+      const data = await res.json();
+      spinner.style.display = "none";
+
+      labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
+      scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
+      accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
+
+      outputBox.style.display = "block";
+      renderGenome(
+        data.result.chunks,
+        data.result.genome_length,
+        data.result.annotations_gff,
+        data.sequence
+      );
+
+      // Store history and pathogenicity score in Firebase
+      await addDoc(predictionsRef, {
+        module: "Pathogenicity",
+        date: new Date().toISOString(),
+        result: data.result.label_name || "Unknown",
+        score: data.result.confidence || 0,
+        id: crypto.randomUUID(), // Generate unique ID
+        accession: data.accession || "Sequence"
+      });
+
+    } catch (error) {
+      alert("❌ Network error: " + error.message);
+      spinner.style.display = "none";
+    }
+  }
+</script>
+
+<!-- Optional: Add hidden eye logo to indicate disabled state (e.g., after limit) -->
+<style>
+  .disabled-module::before {
+    content: url('data:image/svg+xml;base64,...'); /* Base64 of hidden eye logo from query */
+    display: block;
+    margin: 0 auto;
+  }
+</style>
+<script>
+  // After limit check fails, add class to container or button
+  // e.g., document.querySelector('.container').classList.add('disabled-module');
+</script>
 <script>
   let igvBrowser = null;
 
