@@ -379,50 +379,51 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
     spinner.style.display = "block";
 
     let endpoint = inputType === "sequence" ? "/predict_sequence" : "/predict_accession";
-
     try {
-      const res = await fetch("https://vhbert.onrender.com" + endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seq: seq })
-      });
-
-      if (!res.ok) {
-        alert(`❌ Server Error ${res.status}`);
-        spinner.style.display = "none";
-        return;
+          const res = await fetch("https://vhbert.onrender.com" + endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ seq: seq })
+          });
+    
+          if (!res.ok) {
+            alert(`❌ Server Error ${res.status}`);
+            spinner.style.display = "none";
+            return;
+          }
+    
+          const data = await res.json();
+          spinner.style.display = "none";
+    
+          labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
+          scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
+          accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
+    
+          outputBox.style.display = "block";
+          renderGenome(
+            data.result.chunks,
+            data.result.genome_length,
+            data.result.annotations_gff,
+            data.sequence
+          );
+    
+          // Verify and store with consistent fields
+          if (currentUser) {
+            await addDoc(collection(db, `users/${currentUser.uid}/predictions`), {
+              module: "Pathogenicity",
+              date: new Date().toISOString(),
+              result: data.result.label_name || "Unknown",
+              score: data.result.confidence || 0,
+              id: crypto.randomUUID(),
+              accession: data.accession || "Sequence"
+            });
+          }
+    
+        } catch (error) {
+          alert("❌ Network error: " + error.message);
+          spinner.style.display = "none";
+        }
       }
-
-      const data = await res.json();
-      spinner.style.display = "none";
-
-      labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
-      scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
-      accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
-
-      outputBox.style.display = "block";
-      renderGenome(
-        data.result.chunks,
-        data.result.genome_length,
-        data.result.annotations_gff,
-        data.sequence
-      );
-
-      // Store history and pathogenicity score in Firebase
-      await addDoc(predictionsRef, {
-        module: "Pathogenicity",
-        date: new Date().toISOString(),
-        result: data.result.label_name || "Unknown",
-        score: data.result.confidence || 0,
-        id: crypto.randomUUID(), // Generate unique ID
-        accession: data.accession || "Sequence"
-      });
-
-    } catch (error) {
-      alert("❌ Network error: " + error.message);
-      spinner.style.display = "none";
-    }
-  }
 </script>
 
 <!-- Optional: Add hidden eye logo to indicate disabled state (e.g., after limit) -->
