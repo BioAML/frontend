@@ -156,30 +156,7 @@
     let selectedCheckoutUrl = null;
     let selectedModule = ''; 
 
-    // 1. NEW LOGIC: Function to get the module name from the URL
-    function getModuleFromUrl() {
-        const params = new URLSearchParams(window.location.search);
-        // Returns the value of 'module' parameter, or null if not found
-        return params.get('module');
-    }
 
-    // 2. NEW LOGIC: Initialize selection based on URL parameter
-    const initialModule = getModuleFromUrl();
-    if (initialModule && MODULE_PLANS[initialModule]) {
-        selectedModule = initialModule;
-        
-        // Update the dropdown menu visually
-        const moduleSelect = document.getElementById('moduleSelect');
-        // Find the corresponding option and select it
-        const option = Array.from(moduleSelect.options).find(opt => opt.value === initialModule);
-        if (option) {
-            moduleSelect.value = initialModule;
-        }
-    }
-    
-    // ... rest of your script ...
-    // Initial call to set placeholder content (this will now use the URL parameter if found)
-    renderPlans(selectedModule);
     // Define all pricing, features, and checkout URLs based on the selected module
     const MODULE_PLANS = {
         'Genomic': {
@@ -391,7 +368,27 @@
              alert('Checkout URL is missing for the selected plan. Please check the configuration.');
         }
     });
+    // 5. URL CHECK & INITIALIZATION LOGIC (Now placed AFTER MODULE_PLANS and function definitions)
+
+    function getModuleFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('module');
+    }
+
+    const initialModule = getModuleFromUrl();
     
+    // Check if a valid module was passed in the URL
+    if (initialModule && MODULE_PLANS[initialModule]) {
+        // 5a. Set the global variable
+        selectedModule = initialModule; 
+        
+        // 5b. Update the dropdown selection visually
+        const moduleSelect = document.getElementById('moduleSelect');
+        const option = Array.from(moduleSelect.options).find(opt => opt.value === initialModule);
+        if (option) {
+            moduleSelect.value = initialModule;
+        }
+    }
     // Initial call to set placeholder content
     renderPlans(selectedModule);
 </script>
