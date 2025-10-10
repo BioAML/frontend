@@ -73,72 +73,60 @@
 
   <section class="py-16 bg-white">
     <div class="container mx-auto px-4">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+    
+        <div class="max-w-4xl mx-auto mb-10 text-center">
+            <h2 class="text-3xl font-bold text-gray-800 mb-5">Choose Your Module Subscription</h2>
+            <select id="moduleSelect" class="bg-white border border-blue-500 text-gray-900 text-xl rounded-xl focus:ring-blue-500 focus:border-blue-500 p-4 w-full md:w-1/2 shadow-xl appearance-none cursor-pointer">
+                <option value="" disabled selected>--- Select Module ---</option> 
+                <option value="Genomic">Genomic Pathogenicity</option>
+                <option value="Angiography">Angiography</option>
+                <option value="Radiology">Radiology</option>
+            </select>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        
         <div class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800">
           <h3 class="text-2xl font-bold text-center mb-4">Free</h3>
           <p class="text-center text-gray-600 mb-4">$0 / month</p>
           <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
-            <li class="flex items-center space-x-2">
-              <input type="checkbox" id="free_genomic_pathogenicity" class="h-5 w-5 text-blue-600" value="genomic_pathogenicity" data-price="0" checked disabled>
-              <label for="free_genomic_pathogenicity">5 Genomic predictions/month</label>
-            </li>
-            <li class="flex items-center space-x-2">
-              <input type="checkbox" id="free_angiography" class="h-5 w-5 text-green-600" value="angiography" data-price="0" checked disabled>
-              <label for="free_angiography">3 Angiography predictions/month</label>
-            </li>
+            <li>5 Genomic predictions/month</li>
+            <li>3 Angiography predictions/month</li>
             <li>Basic support</li>
             <li>Community access</li>
           </ul>
           <button class="plan-btn bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition duration-300 w-full" data-plan="Free">Get Started</button>
         </div>
 
-        <div class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800 border-2 border-green-500">
-          <h3 class="text-2xl font-bold text-center mb-4">Basic</h3>
-          <p class="text-center text-gray-600 mb-4">$9.99 / month</p>
-          <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
-            <li class="flex items-center space-x-2">
-              <input type="checkbox" id="basic_genomic_unlimited" class="h-5 w-5 text-blue-600" value="genomic_unlimited" data-price="9.99" checked disabled>
-              <label for="basic_genomic_unlimited">Unlimited genomic predictions</label>
-            </li>
-            <li class="flex items-center space-x-2">
-              <input type="checkbox" id="basic_angiography_50" class="h-5 w-5 text-green-600" value="angiography_50" data-price="9.99" checked disabled>
-              <label for="basic_angiography_50">50 angiography predictions/month</label>
-            </li>
-            <li>Email support</li>
-            <li>Priority processing</li>
-          </ul>
-          <button class="plan-btn bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 w-full" data-plan="Basic">Choose Basic</button>
+        <div id="basicPlanCard" class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800 border-2 border-green-500 flex flex-col justify-between">
+            <h3 class="text-2xl font-bold text-center mb-4">Basic</h3>
+            <div id="basicPlanContent">
+                <p class="text-center text-gray-500">Select a module above to view pricing.</p>
+            </div>
+            <button id="basicPlanBtn" class="plan-btn bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 w-full mt-6" data-plan="Basic" data-url="" disabled>Choose Basic</button>
         </div>
 
-        <div class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800">
-          <h3 class="text-2xl font-bold text-center mb-4">Premium</h3>
-          <p class="text-center text-gray-600 mb-4">$29.99 / month</p>
-          <ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
-            <li class="flex items-center space-x-2">
-              <input type="checkbox" id="premium_all_unlimited" class="h-5 w-5 text-blue-600" value="all_unlimited" data-price="29.99" checked disabled>
-              <label for="premium_all_unlimited">Unlimited all predictions</label>
-            </li>
-            <li>Advanced analytics</li>
-            <li>24/7 priority support</li>
-            <li>API access</li>
-          </ul>
-          <button class="plan-btn bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 w-full" data-plan="Premium">Choose Premium</button>
+        <div id="premiumPlanCard" class="bg-white p-6 rounded-lg shadow-lg hover-scale text-gray-800 flex flex-col justify-between">
+            <h3 class="text-2xl font-bold text-center mb-4">Premium</h3>
+            <div id="premiumPlanContent">
+                <p class="text-center text-gray-500">Select a module above to view pricing.</p>
+            </div>
+            <button id="premiumPlanBtn" class="plan-btn bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 w-full mt-6" data-plan="Premium" data-url="" disabled>Choose Premium</button>
         </div>
       </div>
-
+      
       <div class="mt-12 max-w-4xl mx-auto bg-gray-50 p-6 rounded-lg shadow-lg">
         <h3 class="text-xl font-semibold text-gray-800 mb-4">Your Selection</h3>
         <div id="selectedServices" class="mb-4 space-y-2">
-          <p class="text-gray-500">No services selected yet.</p>
+            <p class="text-gray-500">No paid plan selected yet.</p>
         </div>
         <div class="border-t pt-4">
-          <div class="flex justify-between items-center mb-4">
-            <span class="text-lg font-semibold">Total:</span>
-            <span id="totalPrice" class="text-xl font-bold text-green-600">$0.00</span>
-          </div>
-          <button id="checkoutBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-            Proceed to Checkout
-          </button>
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-lg font-semibold">Total:</span>
+                <span id="totalPrice" class="text-xl font-bold text-green-600">$0.00</span>
+            </div>
+            <button id="checkoutBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                Proceed to Checkout
+            </button>
         </div>
       </div>
     </div>
@@ -160,78 +148,192 @@
       animation: fade-in 1s ease-out;
     }
   </style>
+
 <script>
-    // Stripe initialization removed
-
-    let selectedServices = [];
     let selectedPlan = null;
-    let selectedCheckoutUrl = null; // Variable to hold the Lemon Squeezy URL
+    let selectedCheckoutUrl = null;
+    let selectedModule = ''; // Initialized to empty string for "Select Module"
 
-    // 1. NEW: Map your plans to your actual Lemon Squeezy Variant Checkout URLs.
-    // IMPORTANT: Replace the placeholder URLs with your actual store name and Variant IDs.
-    const lemonSqueezyUrls = {
-        'Basic': 'https://bioaml.lemonsqueezy.com/buy/1196ea4c-ab03-4e26-855b-9492a300043f',
-        'Premium': 'https://[YOUR_STORE].lemonsqueezy.com/checkout/buy/[PREMIUM_VARIANT_ID]'
+    // Define all pricing, features, and checkout URLs based on the selected module
+    const MODULE_PLANS = {
+        'Genomic': {
+            basic: {
+                price: 9.99,
+                features: [
+                    'Unlimited Genomic predictions',
+                    'Email support',
+                    'Priority processing'
+                ],
+                url: 'https://bioaml.lemonsqueezy.com/buy/1196ea4c-ab03-4e26-855b-9492a300043f' 
+            },
+            premium: {
+                price: 29.99,
+                features: [
+                    'Unlimited all predictions',
+                    'Advanced analytics',
+                    '24/7 priority support',
+                    'API access'
+                ],
+                url: 'https://[YOUR_STORE].lemonsqueezy.com/checkout/buy/[GENOMIC_PREMIUM_VARIANT_ID]'
+            }
+        },
+        'Angiography': {
+            basic: {
+                price: 9.99,
+                features: [
+                    '50 Angiography predictions/month',
+                    'Email support',
+                    'Priority processing'
+                ],
+                url: 'https://[YOUR_STORE].lemonsqueezy.com/checkout/buy/[ANGIO_BASIC_VARIANT_ID]' 
+            },
+            premium: {
+                price: 29.99,
+                features: [
+                    'Unlimited all predictions',
+                    'Advanced analytics',
+                    '24/7 priority support',
+                    'API access'
+                ],
+                url: 'https://[YOUR_STORE].lemonsqueezy.com/checkout/buy/[ANGIO_PREMIUM_VARIANT_ID]' 
+            }
+        },
+        'Radiology': {
+            basic: {
+                price: 9.99,
+                features: [
+                    '50 Radiology predictions/month',
+                    'Email support',
+                    'Priority processing'
+                ],
+                url: 'https://[YOUR_STORE].lemonsqueezy.com/checkout/buy/[RADIO_BASIC_VARIANT_ID]' 
+            },
+            premium: {
+                price: 29.99,
+                features: [
+                    'Unlimited all predictions',
+                    'Advanced analytics',
+                    '24/7 priority support',
+                    'API access'
+                ],
+                url: 'https://[YOUR_STORE].lemonsqueezy.com/checkout/buy/[RADIO_PREMIUM_VARIANT_ID]' 
+            }
+        }
     };
     
-    // Service configuration remains the same
-    const services = {
-        'genomic_pathogenicity': { name: '5 Genomic predictions/month', price: 0, plan: 'Free' },
-        'angiography': { name: '3 Angiography predictions/month', price: 0, plan: 'Free' },
-        'genomic_unlimited': { name: 'Unlimited genomic predictions', price: 9.99, plan: 'Basic' },
-        'angiography_50': { name: '50 angiography predictions/month', price: 9.99, plan: 'Basic' },
-        'all_unlimited': { name: 'Unlimited all predictions', price: 29.99, plan: 'Premium' }
-    };
+    function generateFeatureList(features) {
+        return `<ul class="list-disc list-inside space-y-2 text-gray-700 mb-6">
+            ${features.map(feature => `<li>${feature}</li>`).join('')}
+        </ul>`;
+    }
 
-    // Plan priority (higher value = higher tier) - Not directly used in the new checkout logic but kept for context
-    const planPriority = { 'Free': 0, 'Basic': 1, 'Premium': 2 };
+    // Function to render the plan cards based on the selected module
+    function renderPlans(module) {
+        const basicContent = document.getElementById('basicPlanContent');
+        const premiumContent = document.getElementById('premiumPlanContent');
+        const basicBtn = document.getElementById('basicPlanBtn');
+        const premiumBtn = document.getElementById('premiumPlanBtn');
+        const freeBtn = document.querySelector('[data-plan="Free"]');
 
-    function updateSelection() {
-        selectedServices = [];
-        const checkoutBtn = document.getElementById('checkoutBtn');
-
-        if (!selectedPlan) {
-            document.getElementById('selectedServices').innerHTML = '<p class="text-gray-500">No services selected yet.</p>';
-            document.getElementById('totalPrice').textContent = '$0.00';
-            checkoutBtn.disabled = true;
+        if (!module || !MODULE_PLANS[module]) {
+            // Logic for when "--- Select Module ---" is chosen
+            const placeholderHtml = '<p class="text-center text-gray-500">Select a module above to view pricing.</p>';
+            
+            basicContent.innerHTML = placeholderHtml;
+            premiumContent.innerHTML = placeholderHtml;
+            basicBtn.disabled = true;
+            premiumBtn.disabled = true;
+            freeBtn.disabled = true;
+            
+            // Re-label buttons for clarity
+            basicBtn.textContent = 'Choose Basic';
+            premiumBtn.textContent = 'Choose Premium';
+            freeBtn.textContent = 'Get Started';
+            
+            selectedPlan = null;
+            updateSelection();
             return;
         }
 
-        document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-            const serviceId = checkbox.value;
-            const service = services[serviceId];
-            if (service && service.plan === selectedPlan) {
-                selectedServices.push(service);
-            }
-        });
+        const moduleData = MODULE_PLANS[module];
+        basicBtn.disabled = false;
+        premiumBtn.disabled = false;
+        freeBtn.disabled = false;
 
-        const total = selectedServices.length > 0 ? selectedServices[0].price : 0;
-
-        const selectedList = document.getElementById('selectedServices');
-        if (selectedServices.length === 0) {
-            selectedList.innerHTML = '<p class="text-gray-500">No services selected yet.</p>';
-        } else {
-            selectedList.innerHTML = selectedServices
-                .map(service => 
-                    `<div class="flex justify-between items-center p-2 bg-white rounded">
-                        <span>${service.name} (${service.plan})</span>
-                        <span class="text-green-600 font-semibold">$${service.price.toFixed(2)}</span>
-                    </div>`
-                ).join('');
-        }
-
-        document.getElementById('totalPrice').textContent = `$${total.toFixed(2)}`;
+        // --- Render Basic Plan ---
+        const basicData = moduleData.basic;
+        const basicContentHtml = `
+            <p class="text-center text-gray-600 mb-4">$${basicData.price.toFixed(2)} / month</p>
+            ${generateFeatureList(basicData.features)}
+        `;
+        basicContent.innerHTML = basicContentHtml;
+        basicBtn.setAttribute('data-url', basicData.url);
         
-        // --- Lemon Squeezy Checkout Setup ---
-        selectedCheckoutUrl = lemonSqueezyUrls[selectedPlan] || null;
-        
-        const isPaidPlanSelected = (selectedPlan === 'Basic' || selectedPlan === 'Premium');
+        // --- Render Premium Plan ---
+        const premiumData = moduleData.premium;
+        const premiumContentHtml = `
+            <p class="text-center text-gray-600 mb-4">$${premiumData.price.toFixed(2)} / month</p>
+            ${generateFeatureList(premiumData.features)}
+        `;
+        premiumContent.innerHTML = premiumContentHtml;
+        premiumBtn.setAttribute('data-url', premiumData.url);
 
-        // Only enable checkout button if a paid plan is selected and a URL exists
-        checkoutBtn.disabled = !(isPaidPlanSelected && selectedCheckoutUrl);
+        // Reset Selection state and re-render the Your Selection box
+        selectedPlan = null;
+        updateSelection();
     }
 
-    // Event listeners for plan buttons
+    // Refactored updateSelection function to use module data
+    function updateSelection() {
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        const selectedList = document.getElementById('selectedServices');
+        let total = 0;
+        
+        // Remove previous highlight from all cards
+        document.querySelectorAll('.plan-btn').forEach(btn => {
+            // CHANGED: Changed ring-blue-500 to ring-green-500
+            btn.closest('.bg-white').classList.remove('ring-4', 'ring-green-500', 'ring-opacity-50');
+        });
+
+        if (!selectedModule) {
+            // This handles the state when no module is selected
+            selectedList.innerHTML = '<p class="text-gray-500">Select a module above.</p>';
+            document.getElementById('totalPrice').textContent = `$0.00`;
+            checkoutBtn.disabled = true;
+            return;
+        }
+        
+        if (selectedPlan === 'Free') {
+            selectedList.innerHTML = `<div class="flex justify-between items-center p-2 bg-white rounded">
+                <span>Free Trial for ${selectedModule}</span>
+                <span class="text-green-600 font-semibold">$0.00</span>
+            </div>`;
+            selectedCheckoutUrl = null;
+            document.getElementById('totalPrice').textContent = `$0.00`;
+            checkoutBtn.disabled = true;
+            // CHANGED: Changed ring-blue-500 to ring-green-500
+            document.querySelector(`[data-plan="Free"]`).closest('.bg-white').classList.add('ring-4', 'ring-green-500', 'ring-opacity-50');
+        } else if (selectedPlan && MODULE_PLANS[selectedModule]) {
+             const planData = MODULE_PLANS[selectedModule][selectedPlan.toLowerCase()];
+             total = planData.price;
+             selectedList.innerHTML = `<div class="flex justify-between items-center p-2 bg-white rounded">
+                <span>${selectedModule} - ${selectedPlan} Plan</span>
+                <span class="text-green-600 font-semibold">$${planData.price.toFixed(2)}</span>
+            </div>`;
+             selectedCheckoutUrl = planData.url;
+             document.getElementById('totalPrice').textContent = `$${total.toFixed(2)}`;
+             document.getElementById('checkoutBtn').disabled = false;
+             // CHANGED: Changed ring-blue-500 to ring-green-500
+             document.querySelector(`[data-plan="${selectedPlan}"]`).closest('.bg-white').classList.add('ring-4', 'ring-green-500', 'ring-opacity-50');
+        } else {
+            selectedList.innerHTML = '<p class="text-gray-500">No paid plan selected yet.</p>';
+            selectedCheckoutUrl = null;
+            document.getElementById('totalPrice').textContent = `$0.00`;
+            document.getElementById('checkoutBtn').disabled = true;
+        }
+    }
+
+    // Event listeners for plan buttons (now they set the plan and trigger updateSelection)
     document.querySelectorAll('.plan-btn').forEach(button => {
         button.addEventListener('click', () => {
             selectedPlan = button.getAttribute('data-plan');
@@ -239,29 +341,33 @@
         });
     });
 
-    // 2. NEW Checkout button logic to manually trigger the Lemon Squeezy overlay
+    // Event listener for the dropdown menu (triggers re-render)
+    document.getElementById('moduleSelect').addEventListener('change', (event) => {
+        selectedModule = event.target.value;
+        renderPlans(selectedModule);
+    });
+
+    // Checkout button logic to manually trigger the Lemon Squeezy overlay
     document.getElementById('checkoutBtn').addEventListener('click', () => {
-        if (selectedPlan === 'Free' || !selectedPlan) {
-            alert('The Free plan does not require checkout. You can proceed.');
-            window.location.href = 'dashboard.html'; 
+        if (selectedPlan === 'Free' || !selectedPlan || !selectedModule) {
+            alert('Please select a Basic or Premium plan for a module before checking out.');
             return;
         }
         
         if (selectedCheckoutUrl) {
-            // Programmatically open the Lemon Squeezy overlay using the stored URL
-            // Ensure the LemonSqueezy global object is available before calling
             if (typeof LemonSqueezy !== 'undefined' && LemonSqueezy.Url) {
                 LemonSqueezy.Url.Open(selectedCheckoutUrl);
             } else {
-                alert('Lemon Squeezy script not yet loaded. Please try again in a moment.');
-                // Fallback to direct redirect if script is slow to load
+                alert('Lemon Squeezy script not yet loaded. Redirecting...');
                 window.location.href = selectedCheckoutUrl;
             }
+        } else {
+             alert('Checkout URL is missing for the selected plan. Please check the configuration.');
         }
     });
     
-    // Initial call to set up the selection state
-    updateSelection(); 
+    // Initial call to set placeholder content
+    renderPlans(selectedModule);
 </script>
 </body>
 </html>
