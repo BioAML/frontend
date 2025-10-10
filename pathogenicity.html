@@ -417,6 +417,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
               id: crypto.randomUUID(),
               accession: data.accession || "Sequence"
             });
+            console.log("Successfully saved prediction for UID:", currentUser.uid);
           }
     
         } catch (error) {
