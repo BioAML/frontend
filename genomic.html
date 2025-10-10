@@ -241,6 +241,10 @@
   onAuthStateChanged(auth, (user) => {
     currentUser = user;
   });
+</script>
+
+<!-- Modify the predict() function -->
+<script>
   async function predict() {
     const seq = document.getElementById("dnaInput").value.trim();
     const inputType = document.querySelector('input[name="inputType"]:checked').value;
