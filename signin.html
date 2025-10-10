@@ -86,7 +86,16 @@
     import { getAuth, signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     
     // Global variables are provided by the canvas environment
-    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    // ✅ Same Firebase Config as Sign-Up page
+    const firebaseConfig = {
+      apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
+      authDomain: "bioaml.firebaseapp.com",
+      projectId: "bioaml",
+      storageBucket: "bioaml.firebasestorage.app",
+      messagingSenderId: "778735157645",
+      appId: "1:778735157645:web:1f1580bb3596c0aa18fdc4",
+      measurementId: "G-3KLFW5G4P3"
+    };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     
