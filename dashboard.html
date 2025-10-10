@@ -211,12 +211,26 @@
         }
 
         function loadUserInfo(user) {
+            // 1. Check Session Storage for Name/Email
+            const sessionName = sessionStorage.getItem('userName');
+            const sessionEmail = sessionStorage.getItem('userEmail');
+            
+            // 2. Use Session Storage data if available
+            if (sessionName && sessionEmail) {
+                document.getElementById('userName').textContent = sessionName;
+                document.getElementById('userEmail').textContent = sessionEmail;
+                return; // Exit the function since we've loaded the data
+            }
+
+            // 3. Fallback to Firebase/Simulated User object (Original logic)
             if (user) {
-                const nameText = user.displayName || user.email || `User #${user.uid.substring(0, 8)}`;
+                // Use user.displayName or user.email prefix if they exist, otherwise a placeholder
+                const nameText = user.displayName || user.email?.split('@')[0] || `User #${user.uid.substring(0, 8)}`;
                 const emailText = user.email || `UID: ${user.uid}`;
                 document.getElementById('userName').textContent = nameText;
                 document.getElementById('userEmail').textContent = emailText;
             } else {
+                // Fallback for no user/error
                 document.getElementById('userName').textContent = "Guest User";
                 document.getElementById('userEmail').textContent = "Please log in";
             }
