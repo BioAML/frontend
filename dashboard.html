@@ -64,7 +64,7 @@
         </div>
     </header>
     <div class="flex flex-1 pt-6">
-        <aside class="w-64 bg-white p-6 shadow-2xl sticky top-24 h-screen-overflow hidden lg:block" style="height: calc(100vh - 6rem);">
+        <aside class="w-64 bg-white p-6 shadow-2xl sticky top-24 h-screen-overflow hidden lg:block" style="height: calc(100vh - 6rem);;">
             <nav class="space-y-4">
                 <a href="#" class="flex items-center p-3 text-green-600 font-bold bg-green-50 rounded-lg shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -306,31 +306,6 @@
             'Default': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<circle cx="12" cy="12" r="10"/>' }
         };
 
-        // Simulated Progress Reports
-        const PROGRESS_REPORTS = {
-            'Angiography': [
-                { id: 'A100', type: 'Angiography', result: 'Fair (65)', date: '2025-09-20', score: 65 },
-                { id: 'A101', type: 'Angiography', result: 'Medium (70)', date: '2025-09-22', score: 70 },
-                { id: 'A102', type: 'Angiography', result: 'Good (80)', date: '2025-09-25', score: 80 },
-                { id: 'A103', type: 'Angiography', result: 'Very Good (88)', date: '2025-09-28', score: 88 },
-                { id: 'A104', type: 'Angiography', result: 'Excellent (95)', date: '2025-10-02', score: 95 },
-            ],
-            'Genomic': [
-                { id: 'G100', type: 'Genomic', result: 'Low (60)', date: '2025-09-20', score: 60 },
-                { id: 'G101', type: 'Genomic', result: 'Medium (75)', date: '2025-09-22', score: 75 },
-                { id: 'G102', type: 'Genomic', result: 'Good (82)', date: '2025-09-25', score: 82 },
-                { id: 'G103', type: 'Genomic', result: 'Very Good (90)', date: '2025-09-28', score: 90 },
-                { id: 'G104', type: 'Genomic', result: 'Excellent (97)', date: '2025-10-02', score: 97 },
-            ],
-            'Radiology': [
-                { id: 'R100', type: 'Radiology', result: 'Fair (62)', date: '2025-09-20', score: 62 },
-                { id: 'R101', type: 'Radiology', result: 'Medium (73)', date: '2025-09-22', score: 73 },
-                { id: 'R102', type: 'Radiology', result: 'Good (85)', date: '2025-09-25', score: 85 },
-                { id: 'R103', type: 'Radiology', result: 'Very Good (89)', date: '2025-09-28', score: 89 },
-                { id: 'R104', type: 'Radiology', result: 'Excellent (94)', date: '2025-10-02', score: 94 },
-            ]
-        };
-        
         // Plans Catalog
         const PLANS_CATALOG = {
             'core_research_plan': {
@@ -342,7 +317,6 @@
                     Angiography: { limit: 50, used: 18, total_used: [5, 4, 3, 6] },
                 },
                 reports: [
-                    ...PROGRESS_REPORTS['Angiography'],
                     { id: 'G00123', type: 'Genomic', title: 'Pathogenicity Report', result: 'High Risk (85%)', date: '2025-09-28', color: 'text-red-600' },
                 ]
             },
@@ -378,20 +352,16 @@
 
         // Define Free Tier Quotas and usage for unsubscribed services
         const FREE_TIER_QUOTAS = {
-            // Test Case: Angiography is EXPIRED (used >= limit)
-            'Angiography': { limit: 5, used: 5, total_used: [1, 1, 1, 2], isExpired: true }, 
-            
-            // Genomic is still active
-            'Genomic': { limit: 5, used: 3, total_used: [1, 1, 1, 0], isExpired: false },     
-            
-            // Radiology is not used
-            'Radiology': { limit: 5, used: 0, total_used: [0, 0, 0, 0], isExpired: false }
+            'Angiography': { limit: 10, used: 0, total_used: [0,0,0,0] },
+            'Genomic': { limit: 10, used: 0, total_used: [0,0,0,0] },
+            'Radiology': { limit: 10, used: 0, total_used: [0,0,0,0] }
         };
         
         // ... PLANS_CATALOG definition follows ...
         let currentScenarioIndex = 0;
         let progressChartInstance = null;
         let currentModule = 'Angiography';
+        let userPredictions = [];
 
         // dashboard (7).html (around line 496)
         
@@ -435,14 +405,14 @@
                 });
             });
         
-            // 2. Add Free Tier Services ONLY IF NOT EXPIRED
+            // 2. Add Free Tier Services
             Object.keys(SERVICE_STYLES).forEach(service => {
                 if (service === 'Default') return; // Skip default style
                 
                 const freeQuota = FREE_TIER_QUOTAS[service];
                 
-                // --- NEW LOGIC: Only add if NOT paid AND (it exists in free quota AND NOT expired) ---
-                if (!aggregatedData.paidServices.has(service) && freeQuota && !freeQuota.isExpired) {
+                // --- NEW LOGIC: Only add if NOT paid AND it exists in free quota ---
+                if (!aggregatedData.paidServices.has(service) && freeQuota) {
                     aggregatedData.services.add(service);
                     aggregatedData.quota[service] = { 
                         ...freeQuota, 
@@ -452,10 +422,40 @@
             });
         
             aggregatedData.services = Array.from(aggregatedData.services);
+
+            // 3. Override used and total_used with real predictions data
+            if (userPredictions.length > 0) {
+                const counts = {};
+                userPredictions.forEach(p => {
+                    counts[p.type] = (counts[p.type] || 0) + 1;
+                });
+
+                const now = new Date('2025-10-11');
+                const fourWeeksAgo = new Date(now);
+                fourWeeksAgo.setDate(now.getDate() - 28);
+
+                Object.keys(aggregatedData.quota).forEach(service => {
+                    aggregatedData.quota[service].used = counts[service] || 0;
+
+                    const weeklyCounts = [0, 0, 0, 0];
+                    userPredictions.filter(p => p.type === service && new Date(p.date) >= fourWeeksAgo).forEach(p => {
+                        const pDate = new Date(p.date);
+                        const daysAgo = Math.floor((now - pDate) / 86400000);
+                        const weekIndex = Math.floor(daysAgo / 7);
+                        if (weekIndex < 4) {
+                            weeklyCounts[3 - weekIndex]++;
+                        }
+                    });
+                    aggregatedData.quota[service].total_used = weeklyCounts;
+                });
+
+                aggregatedData.reports = userPredictions.filter(p => aggregatedData.services.includes(p.type));
+            }
+
             return aggregatedData;
         }
 
-        function renderDashboard(scenario) {
+        async function renderDashboard(scenario) {
             const data = aggregateUserDataFromSubscriptions(scenario.subscriptions);
             renderModuleCards(data);
             renderActivityGraph(data.quota, data.services);
@@ -482,18 +482,32 @@
                 const isUnlimited = quota.limit === null;
                 const used = quota.used;
                 const limit = quota.limit;
-                const remainingText = isUnlimited ? 'Unlimited' : `${limit - used} remaining`;
+                const remaining = isUnlimited ? 'Unlimited' : `${Math.max(0, limit - used)} remaining`;
                 const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
                 const style = getServiceStyle(service);
                 let progressBarColor = `bg-${style.color}-600`;
                 if (!isUnlimited && percentageUsed > 80) {
                     progressBarColor = 'bg-red-500';
                 }
-                const moduleSpecificActions = `
-                    <div class="flex space-x-3">
+
+                let newPredictionButton;
+                if (!isUnlimited && used >= limit) {
+                    newPredictionButton = `
+                        <button disabled class="btn-flex px-3 py-2 text-sm font-bold rounded-lg bg-gray-400 text-white cursor-not-allowed transition duration-200 shadow-md text-center">
+                            New Prediction (Limit Reached)
+                        </button>
+                    `;
+                } else {
+                    newPredictionButton = `
                         <a href="${service.toLowerCase()}.html" class="btn-flex px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md text-center transform hover:scale-105">
                             New Prediction
                         </a>
+                    `;
+                }
+
+                const moduleSpecificActions = `
+                    <div class="flex space-x-3">
+                        ${newPredictionButton}
                         <button onclick="showProgressModal('${service}')" class="btn-flex px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm text-center">
                             View Progress
                         </button>
@@ -519,7 +533,7 @@
                             </div>
                         </div>
                         <div class="space-y-2 mb-6">
-                            <p class="text-sm text-gray-600 font-medium">${remainingText} left</p>
+                            <p class="text-sm text-gray-600 font-medium">${remaining} left</p>
                             <div class="progress-bar bg-gray-200 relative">
                                 <div class="${progressBarColor} absolute top-0 left-0 h-full" style="width: ${percentageUsed}%;"></div>
                             </div>
@@ -615,7 +629,8 @@
                 modalContent.classList.remove('scale-95', 'opacity-0');
                 modalContent.classList.add('scale-100', 'opacity-100');
             }, 10);
-            renderProgressChart(PROGRESS_REPORTS[module] || []);
+            const moduleReports = userPredictions.filter(p => p.type === module).sort((a, b) => new Date(a.date) - new Date(b.date));
+            renderProgressChart(moduleReports);
         }
 
         window.closeProgressModal = function() {
@@ -689,18 +704,24 @@
         }
 
         const togglePlanBtn = document.getElementById('togglePlanBtn');
-        function cyclePlan() {
+        async function cyclePlan() {
             currentScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
             const currentScenario = SUBSCRIPTION_SCENARIOS[currentScenarioIndex];
             const nextScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
             const nextScenarioName = SUBSCRIPTION_SCENARIOS[nextScenarioIndex].key;
             togglePlanBtn.textContent = `Click here to simulate the '${nextScenarioName}' scenario!`;
-            renderDashboard(currentScenario);
+            await renderDashboard(currentScenario);
         }
         togglePlanBtn.addEventListener('click', cyclePlan);
         document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebaseAndAuthenticate();
-            cyclePlan();
+            initializeFirebaseAndAuthenticate().then(async () => {
+                if (auth?.currentUser) {
+                    userPredictions = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
+                } else {
+                    userPredictions = [];
+                }
+                await cyclePlan();
+            });
         });
         async function fetchStoredAnalysisFromFirebase(uid) {
             if (!db || !uid) return [];
@@ -712,15 +733,13 @@
               date: doc.data().date,
               result: doc.data().result,
               score: doc.data().score,
-              color: doc.data().score > 0.5 ? 'text-red-600' : 'text-green-600'
+              color: doc.data().score > 50 ? 'text-red-600' : 'text-green-600'
             }));
             return predictions.length > 0 ? predictions : []; // Ensure non-empty array
           }
         
           // Update renderStoredAnalysis to use fetched data
-        async function renderStoredAnalysis() {
-            if (!auth.currentUser) return;
-            const reports = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
+        function renderStoredAnalysis(reports) {
             const listContainer = document.getElementById('storedAnalysisList');
             const noMessage = document.getElementById('noAnalysisMessage');
             if (reports.length === 0) {
@@ -733,7 +752,7 @@
             let reportsHtml = sortedReports.map(report => {
               const style = getServiceStyle(report.type);
               const linkPath = `${report.type.toLowerCase()}.html?id=${report.id}`;
-              const resultText = report.result || `Score: ${(report.score * 100).toFixed(2)}%`;
+              const resultText = report.result || `Score: ${report.score.toFixed(2)}`;
               return `
                 <div class="p-5 border-l-4 ${style.primaryBorder} rounded-xl bg-white flex justify-between items-center shadow-lg hover:shadow-xl transition duration-300 hover:border-${style.color}-600">
                   <div class="flex items-center space-x-4">
@@ -757,11 +776,6 @@
           }
         
           // Ensure renderStoredAnalysis is called after authentication
-          document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebaseAndAuthenticate().then(() => {
-              renderStoredAnalysis();
-            });
-          });
     </script>
     <script type="module">
       // Example: In aggregateUserDataFromSubscriptions, fetch real quotas
