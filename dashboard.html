@@ -459,7 +459,7 @@
           const data = aggregateUserDataFromSubscriptions(scenario.subscriptions);
           await renderModuleCards(data);
           renderActivityGraph(data.quota, data.services);
-          renderStoredAnalysis();
+          await renderStoredAnalysis();
         }
 
         function getServiceStyle(serviceName) {
@@ -500,6 +500,7 @@
             const predictionCount = counts[service] || 0;
             const isFreeLimitReached = predictionCount >= 3;
             const buttonDisabledClass = isFreeLimitReached ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
+
         
             const moduleSpecificActions = `
               <div class="flex space-x-3">
