@@ -241,7 +241,7 @@
 
     // Check free tier limit (only 1 prediction)
     const predictionsRef = collection(db, `users/${currentUser.uid}/predictions`);
-    const q = query(predictionsRef, where("module", "==", "Pathogenicity"));
+    const q = query(predictionsRef, where("module", "==", "Genomic"));
     const snapshot = await getCountFromServer(q);
     const count = snapshot.data().count;
 
@@ -285,7 +285,7 @@
           // Verify and store with consistent fields
           if (currentUser) {
             await addDoc(collection(db, `users/${currentUser.uid}/predictions`), {
-              module: "Pathogenicity",
+              module: "Genomic",
               date: new Date().toISOString(),
               result: data.result.label_name || "Unknown",
               score: data.result.confidence || 0,
