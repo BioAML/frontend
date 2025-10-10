@@ -219,6 +219,28 @@
 
 
 <script>
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getFirestore, collection, addDoc, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
+    authDomain: "bioaml.firebaseapp.com",
+    projectId: "bioaml",
+    storageBucket: "bioaml.firebasestorage.app",
+    messagingSenderId: "778735157645",
+    appId: "1:778735157645:web:1f1580bb3596c0aa18fdc4",
+    measurementId: "G-3KLFW5G4P3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUser = null;
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+  });
   async function predict() {
     const seq = document.getElementById("dnaInput").value.trim();
     const inputType = document.querySelector('input[name="inputType"]:checked').value;
@@ -346,30 +368,7 @@ Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en
   }
 </style>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, collection, addDoc, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
-    authDomain: "bioaml.firebaseapp.com",
-    projectId: "bioaml",
-    storageBucket: "bioaml.firebasestorage.app",
-    messagingSenderId: "778735157645",
-    appId: "1:778735157645:web:1f1580bb3596c0aa18fdc4",
-    measurementId: "G-3KLFW5G4P3"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  let currentUser = null;
-  onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-  });
-</script>
 
 <!-- Modify the predict() function -->
 
