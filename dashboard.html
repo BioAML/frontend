@@ -268,7 +268,48 @@
                 document.getElementById('userEmail').textContent = "Please log in";
             }
         }
-
+        // Add this code inside your <script type="module"> block
+        
+        // Function to open/close the dropdown menu
+        window.toggleDropdown = function() {
+            const menu = document.getElementById('userDropdownMenu');
+            
+            // Toggle the 'hidden' class
+            menu.classList.toggle('hidden');
+        
+            // Apply animation classes
+            if (!menu.classList.contains('hidden')) {
+                // Show menu
+                setTimeout(() => {
+                    menu.classList.remove('opacity-0', 'scale-95');
+                    menu.classList.add('opacity-100', 'scale-100');
+                }, 10);
+            } else {
+                // Hide menu
+                menu.classList.remove('opacity-100', 'scale-100');
+                menu.classList.add('opacity-0', 'scale-95');
+            }
+        }
+        
+        // Function to close the dropdown when clicking outside of it
+        document.addEventListener('click', function(event) {
+            const userMenuContainer = document.getElementById('userMenu');
+            const userDropdownMenu = document.getElementById('userDropdownMenu');
+            
+            // Check if the click occurred outside the menu container AND the menu is currently visible
+            if (userMenuContainer && userDropdownMenu && 
+                !userMenuContainer.contains(event.target) &&
+                !userDropdownMenu.classList.contains('hidden')) 
+            {
+                // Close the menu smoothly
+                userDropdownMenu.classList.remove('opacity-100', 'scale-100');
+                userDropdownMenu.classList.add('opacity-0', 'scale-95');
+                // Wait for the transition to finish before hiding completely
+                setTimeout(() => {
+                    userDropdownMenu.classList.add('hidden');
+                }, 300); // 300ms matches the 'duration-300' class
+            }
+        });
         // --- SERVICE STYLES ---
         const SERVICE_STYLES = {
             'Genomic': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<path d="M12 2l10 20-10-5-10 5 10-20z"/><path d="M12 2v20"/>' },
