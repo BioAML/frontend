@@ -476,7 +476,15 @@
           }
           noModulesMessage.style.display = 'none';
         
-          const { counts } = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
+          let counts = {};
+          if (auth.currentUser) {
+            try {
+              const result = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
+              counts = result.counts;
+            } catch (error) {
+              console.error("Error fetching stored analysis:", error);
+            }
+          }
         
           data.services.forEach(service => {
             const quota = data.quota[service];
