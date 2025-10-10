@@ -219,123 +219,138 @@
 
 
 <script type="module">
-  // Firebase Imports
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, collection, addDoc, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // Firebase Imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  // Firebase Configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
-    authDomain: "bioaml.firebaseapp.com",
-    projectId: "bioaml",
-    storageBucket: "bioaml.firebasestorage.app",
-    messagingSenderId: "778735157645",
-    appId: "1:778735157645:web:1f1580bb3596c0aa18fdc4",
-    measurementId: "G-3KLFW5G4P3"
-  };
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
+      authDomain: "bioaml.firebaseapp.com",
+      projectId: "bioaml",
+      storageBucket: "bioaml.firebasestorage.app",
+      messagingSenderId: "778735157645",
+      appId: "1:778735157645:web:1f1580bb3596c0aa18fdc4",
+      measurementId: "G-3KLFW5G4P3"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-  let currentUser = null;
+    let currentUser = null;
 
-  // Wait for authentication state
-  onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    if (!currentUser) {
-      signInAnonymously(auth).catch((error) => {
-        console.error("Anonymous sign-in failed:", error);
+    // Wait for authentication state
+    async function initializeAuth() {
+      return new Promise((resolve) => {
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            currentUser = user;
+            resolve(user);
+          } else {
+            signInAnonymously(auth).then((userCredential) => {
+              currentUser = userCredential.user;
+              resolve(userCredential.user);
+            }).catch((error) => {
+              console.error("Anonymous sign-in failed:", error);
+              resolve(null);
+            });
+          }
+        });
       });
     }
-    console.log("Authentication state changed, currentUser:", currentUser ? currentUser.uid : "null");
-  });
 
-  // Modify the predict() function
-  async function predict() {
-    // Wait for currentUser to be defined
-    if (!currentUser) {
-      alert("⚠️ Please wait for authentication or log in to use this tool.");
-      return;
-    }
-
-    const seq = document.getElementById("dnaInput").value.trim();
-    const inputType = document.querySelector('input[name="inputType"]:checked').value;
-    const spinner = document.getElementById("spinner");
-    const outputBox = document.getElementById("outputBox");
-
-    const labelLine = document.getElementById("labelLine");
-    const scoreLine = document.getElementById("scoreLine");
-    const accessionLine = document.getElementById("accessionLine");
-
-    if (!seq) {
-      alert("⚠️ Please enter a sequence or accession ID.");
-      return;
-    }
-
-    const predictionsRef = collection(db, `users/${currentUser.uid}/predictions`);
-    const q = query(predictionsRef, where("module", "==", "Pathogenicity"));
-    const snapshot = await getCountFromServer(q);
-    const count = snapshot.data().count;
-
-    if (count >= 1) {
-      alert("⚠️ Free tier limit reached (1 prediction). Upgrade to continue.");
-      return;
-    }
-
-    outputBox.style.display = "none";
-    spinner.style.display = "block";
-
-    let endpoint = inputType === "sequence" ? "/predict_sequence" : "/predict_accession";
-
-    try {
-      const res = await fetch("https://vhbert.onrender.com" + endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seq: seq })
-      });
-
-      if (!res.ok) {
-        alert(`❌ Server Error ${res.status}`);
-        spinner.style.display = "none";
+    // Define predict function
+    async function predict() {
+      if (!currentUser) {
+        alert("⚠️ Please wait for authentication or log in to use this tool.");
         return;
       }
 
-      const data = await res.json();
-      spinner.style.display = "none";
+      const seq = document.getElementById("dnaInput").value.trim();
+      const inputType = document.querySelector('input[name="inputType"]:checked').value;
+      const spinner = document.getElementById("spinner");
+      const outputBox = document.getElementById("outputBox");
 
-      labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
-      scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
-      accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
+      const labelLine = document.getElementById("labelLine");
+      const scoreLine = document.getElementById("scoreLine");
+      const accessionLine = document.getElementById("accessionLine");
 
-      outputBox.style.display = "block";
-      renderGenome(
-        data.result.chunks,
-        data.result.genome_length,
-        data.result.annotations_gff,
-        data.sequence
-      );
+      if (!seq) {
+        alert("⚠️ Please enter a sequence or accession ID.");
+        return;
+      }
 
-      // Save prediction
-      const predictionData = {
-        module: "Pathogenicity",
-        date: new Date().toISOString(),
-        result: data.result.label_name || "Unknown",
-        score: data.result.confidence || 0,
-        id: crypto.randomUUID(),
-        accession: data.accession || "Sequence",
-        userId: currentUser.uid
-      };
-      console.log("Saving prediction:", predictionData);
-      await addDoc(predictionsRef, predictionData);
-      console.log("Prediction saved successfully");
+      const predictionsRef = collection(db, `users/${currentUser.uid}/predictions`);
+      const q = query(predictionsRef, where("module", "==", "Pathogenicity"));
+      const snapshot = await getCountFromServer(q);
+      const count = snapshot.data().count;
 
-    } catch (error) {
-      alert("❌ Network error: " + error.message);
-      spinner.style.display = "none";
+      if (count >= 1) {
+        alert("⚠️ Free tier limit reached (1 prediction). Upgrade to continue.");
+        return;
+      }
+
+      outputBox.style.display = "none";
+      spinner.style.display = "block";
+
+      let endpoint = inputType === "sequence" ? "/predict_sequence" : "/predict_accession";
+
+      try {
+        const res = await fetch("https://vhbert.onrender.com" + endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ seq: seq })
+        });
+
+        if (!res.ok) {
+          alert(`❌ Server Error ${res.status}`);
+          spinner.style.display = "none";
+          return;
+        }
+
+        const data = await res.json();
+        spinner.style.display = "none";
+
+        labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
+        scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
+        accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
+
+        outputBox.style.display = "block";
+        // Assuming renderGenome is defined elsewhere
+        renderGenome(
+          data.result.chunks,
+          data.result.genome_length,
+          data.result.annotations_gff,
+          data.sequence
+        );
+
+        const predictionData = {
+          module: "Pathogenicity",
+          date: new Date().toISOString(),
+          result: data.result.label_name || "Unknown",
+          score: data.result.confidence || 0,
+          id: crypto.randomUUID(),
+          accession: data.accession || "Sequence",
+          userId: currentUser.uid
+        };
+        console.log("Saving prediction:", predictionData);
+        await addDoc(predictionsRef, predictionData);
+        console.log("Prediction saved successfully");
+
+      } catch (error) {
+        alert("❌ Network error: " + error.message);
+        spinner.style.display = "none";
+      }
     }
-  }
+
+    // Initialize and attach event listener
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initializeAuth();
+      console.log("Initialized with UID:", currentUser ? currentUser.uid : "null");
+      document.getElementById("predictButton").addEventListener("click", predict);
+    });
 </script>
 
 
