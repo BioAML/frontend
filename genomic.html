@@ -219,10 +219,12 @@
 
 
 <script type="module">
+  // Firebase Imports
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
   import { getFirestore, collection, addDoc, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+  // Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
     authDomain: "bioaml.firebaseapp.com",
@@ -238,14 +240,26 @@
   const db = getFirestore(app);
 
   let currentUser = null;
+
+  // Wait for authentication state
   onAuthStateChanged(auth, (user) => {
     currentUser = user;
+    if (!currentUser) {
+      signInAnonymously(auth).catch((error) => {
+        console.error("Anonymous sign-in failed:", error);
+      });
+    }
+    console.log("Authentication state changed, currentUser:", currentUser ? currentUser.uid : "null");
   });
-</script>
 
-<!-- Modify the predict() function -->
-<script>
+  // Modify the predict() function
   async function predict() {
+    // Wait for currentUser to be defined
+    if (!currentUser) {
+      alert("⚠️ Please wait for authentication or log in to use this tool.");
+      return;
+    }
+
     const seq = document.getElementById("dnaInput").value.trim();
     const inputType = document.querySelector('input[name="inputType"]:checked').value;
     const spinner = document.getElementById("spinner");
@@ -260,85 +274,66 @@
       return;
     }
 
-    if (!currentUser) {
-      alert("⚠️ Please log in to use this tool.");
-      return;
-    }
-
-    // Check free tier limit (only 1 prediction)
     const predictionsRef = collection(db, `users/${currentUser.uid}/predictions`);
-    const q = query(predictionsRef, where("module", "==", "Genomic"));
+    const q = query(predictionsRef, where("module", "==", "Pathogenicity"));
     const snapshot = await getCountFromServer(q);
     const count = snapshot.data().count;
 
     if (count >= 1) {
       alert("⚠️ Free tier limit reached (1 prediction). Upgrade to continue.");
-      return; // Turn off/disable further predictions (eye logo implies "hide/disable")
+      return;
     }
 
     outputBox.style.display = "none";
     spinner.style.display = "block";
 
     let endpoint = inputType === "sequence" ? "/predict_sequence" : "/predict_accession";
+
     try {
-          const res = await fetch("https://vhbert.onrender.com" + endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ seq: seq })
-          });
-    
-          if (!res.ok) {
-            alert(`❌ Server Error ${res.status}`);
-            spinner.style.display = "none";
-            return;
-          }
-    
-          const data = await res.json();
-          spinner.style.display = "none";
-    
-          labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
-          scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
-          accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
-    
-          outputBox.style.display = "block";
-          renderGenome(
-            data.result.chunks,
-            data.result.genome_length,
-            data.result.annotations_gff,
-            data.sequence
-          );
-    
-          // Verify and store with consistent fields
-          if (currentUser) {
-            await addDoc(collection(db, `users/${currentUser.uid}/predictions`), {
-              module: "Genomic",
-              date: new Date().toISOString(),
-              result: data.result.label_name || "Unknown",
-              score: data.result.confidence || 0,
-              id: crypto.randomUUID(),
-              accession: data.accession || "Sequence"
-            });
-            console.log("Successfully saved prediction for UID:", currentUser.uid);
-          }
-    
-        } catch (error) {
-          alert("❌ Network error: " + error.message);
-          spinner.style.display = "none";
-        }
+      const res = await fetch("https://vhbert.onrender.com" + endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seq: seq })
+      });
+
+      if (!res.ok) {
+        alert(`❌ Server Error ${res.status}`);
+        spinner.style.display = "none";
+        return;
       }
 
-  async function copyCitation() {
-    const citation = `Decoding the Genomic Landscape of Viruses Using Deep Learning: An Integrated Analysis
-R Atif, IIUI, 2024
-Google Scholar: https://scholar.google.com/citations?view_op=view_citation&hl=en&user=a4fOyR8AAAAJ&citation_for_view=a4fOyR8AAAAJ:d1gkVwhDpl0C`;
+      const data = await res.json();
+      spinner.style.display = "none";
 
-    try {
-      await navigator.clipboard.writeText(citation);
-      const btn = document.getElementById("copyBtn");
-      btn.textContent = "✅ Copied!";
-      setTimeout(() => btn.textContent = "📋 Copy", 2000);
-    } catch (err) {
-      alert("❌ Failed to copy: " + err);
+      labelLine.textContent = `🧬 Label: ${data.result.label_name || "Unknown"}`;
+      scoreLine.textContent = `📊 Confidence Score: ${data.result.confidence?.toFixed(4) || "—"}`;
+      accessionLine.textContent = `🧾 Input/Accession: ${data.accession || "Sequence"}`;
+
+      outputBox.style.display = "block";
+      renderGenome(
+        data.result.chunks,
+        data.result.genome_length,
+        data.result.annotations_gff,
+        data.sequence
+      );
+
+      // Save prediction
+      const predictionData = {
+        module: "Pathogenicity",
+        date: new Date().toISOString(),
+        result: data.result.label_name || "Unknown",
+        score: data.result.confidence || 0,
+        id: crypto.randomUUID(),
+        accession: data.accession || "Sequence",
+        userId: currentUser.uid
+      };
+      console.log("Saving prediction:", predictionData);
+      await addDoc(predictionsRef, predictionData);
+      console.log("Prediction saved successfully");
+
+    } catch (error) {
+      alert("❌ Network error: " + error.message);
+      spinner.style.display = "none";
     }
   }
 </script>
