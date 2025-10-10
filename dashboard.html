@@ -388,27 +388,49 @@
             { key: 'Free Tier (No Paid Subs)', subscriptions: [] }
         ];
 
+        // Define Free Tier Quotas and usage for unsubscribed services
+        const FREE_TIER_QUOTAS = {
+            // Test Case: Angiography is EXPIRED (used >= limit)
+            'Angiography': { limit: 5, used: 5, total_used: [1, 1, 1, 2], isExpired: true }, 
+            
+            // Genomic is still active
+            'Genomic': { limit: 5, used: 3, total_used: [1, 1, 1, 0], isExpired: false },     
+            
+            // Radiology is not used
+            'Radiology': { limit: 5, used: 0, total_used: [0, 0, 0, 0], isExpired: false }
+        };
+        
+        // ... PLANS_CATALOG definition follows ...
         let currentScenarioIndex = 0;
         let progressChartInstance = null;
         let currentModule = 'Angiography';
 
+        // dashboard (7).html (around line 496)
+        
         function aggregateUserDataFromSubscriptions(subscriptionKeys) {
             const aggregatedData = {
                 activePlans: [],
                 services: new Set(),
                 quota: {},
-                reports: []
+                reports: [],
+                paidServices: new Set() // Tracks which services are covered by paid plans
             };
+            
+            // 1. Process Paid Subscriptions
             subscriptionKeys.forEach(key => {
                 const plan = PLANS_CATALOG[key];
                 if (!plan) return;
                 aggregatedData.activePlans.push(plan.name);
                 aggregatedData.reports.push(...plan.reports);
+                
                 plan.services.forEach(service => {
                     aggregatedData.services.add(service);
+                    aggregatedData.paidServices.add(service); // Mark as paid
                     const newQuota = plan.quota[service];
+                    
+                    // Aggregation logic for paid services
                     if (!aggregatedData.quota[service]) {
-                        aggregatedData.quota[service] = { ...newQuota };
+                        aggregatedData.quota[service] = { ...newQuota, isFree: false };
                     } else {
                         let existingQuota = aggregatedData.quota[service];
                         if (existingQuota.limit === null || newQuota.limit === null) {
@@ -424,6 +446,23 @@
                     }
                 });
             });
+        
+            // 2. Add Free Tier Services ONLY IF NOT EXPIRED
+            Object.keys(SERVICE_STYLES).forEach(service => {
+                if (service === 'Default') return; // Skip default style
+                
+                const freeQuota = FREE_TIER_QUOTAS[service];
+                
+                // --- NEW LOGIC: Only add if NOT paid AND (it exists in free quota AND NOT expired) ---
+                if (!aggregatedData.paidServices.has(service) && freeQuota && !freeQuota.isExpired) {
+                    aggregatedData.services.add(service);
+                    aggregatedData.quota[service] = { 
+                        ...freeQuota, 
+                        isFree: true 
+                    };
+                }
+            });
+        
             aggregatedData.services = Array.from(aggregatedData.services);
             return aggregatedData;
         }
