@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -191,34 +192,55 @@
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/igv@2.13.3/dist/igv.min.js"></script>
 </head>
 <body>
+  <div class="container">
+    <h1>🧬 VirTransformer – Predict Pathogenicity</h1>
+    <p class="description">Enter a virus DNA sequence or NCBI accession ID below to predict pathogenicity using our deep learning model.</p>
 
-<div class="container">
-  <h1>🧬 VirTransformer</h1>
-  <p class="description">AI tool to predict human pathogenicity from viral DNA/RNA sequence or NCBI Accession ID (More than 95% Accurate)</p>
+    <div class="radio-options">
+      <input type="radio" id="sequence" name="inputType" value="sequence" checked>
+      <label for="sequence">DNA Sequence</label>
+      <input type="radio" id="accession" name="inputType" value="accession">
+      <label for="accession">NCBI Accession ID</label>
+    </div>
 
-  <div class="radio-options">
-    <label><input type="radio" name="inputType" value="sequence" checked> Viral Sequence</label>
-    <label><input type="radio" name="inputType" value="accession"> Accession ID</label>
+    <textarea id="dnaInput" rows="6" placeholder="Enter DNA sequence (A, T, C, G only) or accession ID (e.g., NC_045512.2)"></textarea>
+
+    <button id="predictButton">Predict Pathogenicity</button>
+
+    <div id="spinner" class="spinner" style="display: none;"></div>
+
+    <div id="outputBox" class="output-box">
+      <p class="output-line" id="labelLine"></p>
+      <p class="output-line" id="scoreLine"></p>
+      <p class="output-line" id="accessionLine"></p>
+    </div>
+
+    <div id="igv-container"></div>
   </div>
 
-  <textarea id="dnaInput" placeholder="Paste DNA Sequence or Accession ID..."></textarea>
-  <button onclick="predict()">🚀 Run Prediction</button>
-
-  <!-- Spinner -->
-  <div class="spinner" id="spinner" style="display: none;"></div>
-  
-  <!-- Output Display -->
-  <div class="output-box" id="outputBox">
-    <p class="output-line" id="labelLine">🧬 Label: —</p>
-    <p class="output-line" id="scoreLine">📊 Confidence Score: —</p>
-    <p class="output-line" id="accessionLine">🧾 Input/Accession: —</p>
+  <!-- ===================== Cite Us Box ===================== -->
+  <div class="cite-box">
+    <h3>📖 Cite us</h3>
+    <div class="cite-content">
+      <p>
+        <strong>Decoding the Genomic Landscape of Viruses Using Deep Learning: An Integrated Analysis</strong><br>
+        <span class="author">R Atif</span>, <span class="affiliation">IIUI</span>, <span class="year">2024</span><br>
+        <a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=a4fOyR8AAAAJ&citation_for_view=a4fOyR8AAAAJ:d1gkVwhDpl0C" target="_blank">
+          Google Scholar Link
+        </a>
+      </p>
+      <button id="copyBtn" onclick="copyCitation()">📋 Copy</button>
+    </div>
   </div>
-</div>
 
+  <footer>
+    Built with ❤️ by <a href="https://bioaml.org" target="_blank">BioAML</a>
+  </footer>
 
-<script type="module">
+  <script type="module">
     // Firebase Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -319,12 +341,16 @@
 
         outputBox.style.display = "block";
         // Assuming renderGenome is defined elsewhere
-        renderGenome(
-          data.result.chunks,
-          data.result.genome_length,
-          data.result.annotations_gff,
-          data.sequence
-        );
+        if (typeof renderGenome === "function") {
+          renderGenome(
+            data.result.chunks,
+            data.result.genome_length,
+            data.result.annotations_gff,
+            data.sequence
+          );
+        } else {
+          console.warn("renderGenome function is not defined");
+        }
 
         const predictionData = {
           module: "Pathogenicity",
@@ -345,189 +371,123 @@
       }
     }
 
+    let igvBrowser = null;
+
+    async function renderGenome(predChunks, genomeLength, gffData, dna_sequence) {
+      if (igvBrowser) {
+        igv.removeBrowser(igvBrowser);
+        igvBrowser = null;
+      }
+
+      // === Fix GFF: force seqid to "virus" ===
+      gffData = gffData
+        .split("\n")
+        .map(line => {
+          if (!line || line.startsWith("#")) return line;
+          const cols = line.split("\t");
+          cols[0] = "virus"; // overwrite seqid
+          return cols.join("\t");
+        })
+        .join("\n");
+
+      // === Merge contiguous chunks with same class ===
+      let merged = [];
+      let current = null;
+
+      predChunks.forEach(chunk => {
+        const cls = chunk.score > 0.5 ? 1 : 0; // 1=red, 0=green
+        if (!current) {
+          current = { start: chunk.start, end: chunk.end, cls, score: chunk.score };
+        } else if (cls === current.cls && chunk.start === current.end) {
+          // extend contiguous block
+          current.end = chunk.end;
+          current.score = (current.score + chunk.score) / 2; // average score
+        } else {
+          merged.push(current);
+          current = { start: chunk.start, end: chunk.end, cls, score: chunk.score };
+        }
+      });
+      if (current) merged.push(current);
+
+      // === BED track (continuous blocks) ===
+      let bed = "";
+      merged.forEach(block => {
+        const start0 = block.start - 1; // BED is 0-based
+        bed += `virus\t${start0}\t${block.end}\t.\t${block.score}\n`;
+      });
+
+      // === BedGraph track (wave) ===
+      let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
+      predChunks.forEach(chunk => {
+        for (let pos = chunk.start - 1; pos < chunk.end; pos++) {
+          bedGraph += `virus\t${pos}\t${pos + 1}\t${chunk.score}\n`;
+        }
+      });
+
+      // === Blob URLs ===
+      const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
+      const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
+      const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
+      const fastaUrl = URL.createObjectURL(
+        new Blob([`>virus\n${dna_sequence}`], { type: "text/plain" })
+      );
+
+      // === IGV options ===
+      const options = {
+        reference: {
+          id: "virus",
+          name: "Virus Genome",
+          fastaURL: fastaUrl
+        },
+        tracks: [
+          {
+            name: "Genome Annotations",
+            type: "annotation",
+            format: "gff3",
+            url: gffUrl,
+            displayMode: "EXPANDED",
+            color: "darkgreen"
+          },
+          {
+            name: "Pathogenicity Predictions",
+            type: "annotation",
+            format: "bed",
+            url: bedUrl,
+            color: feature => feature.score > 0.5 ? "red" : "green",
+            displayMode: "EXPANDED"
+          },
+          {
+            name: "Prediction Scores (Wave)",
+            type: "wig",
+            format: "bedgraph",
+            url: bedGraphUrl,
+            color: "blue",
+            autoscale: true,
+            min: 0,
+            max: 1,
+            displayMode: "EXPANDED"
+          }
+        ]
+      };
+
+      const igvDiv = document.getElementById("igv-container");
+      igvDiv.innerHTML = "";
+      igvBrowser = await igv.createBrowser(igvDiv, options);
+      console.log("✅ IGV loaded with merged blocks, no white gaps between chunks");
+    }
+
     // Initialize and attach event listener
     document.addEventListener('DOMContentLoaded', async () => {
       await initializeAuth();
       console.log("Initialized with UID:", currentUser ? currentUser.uid : "null");
-      document.getElementById("predictButton").addEventListener("click", predict);
-    });
-</script>
-
-
-<!-- Genome Pathogenicity Box -->
-<div class="genome-box">
-  <h2>🧬 Genome Pathogenicity View</h2>
-  <div id="igv-container" style="width:100%; height:500px; background:white; border-radius:12px;"></div>
-</div>
-
-<!-- IGV.js -->
-<script src="https://cdn.jsdelivr.net/npm/igv/dist/igv.min.js"></script>
-
-<style>
-  .genome-box {
-    max-width: 880px;
-    margin: 2.5rem auto;
-    padding: 1.5rem;
-    background: linear-gradient(to right, #1a73e8, #4caf50);
-    border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    font-family: 'Inter', sans-serif;
-    color: white;
-    animation: fadeIn 0.6s ease;
-  }
-  .genome-box h2 {
-    text-align: center;
-    margin-bottom: 1rem;
-    font-size: 1.4rem;
-  }
-</style>
-
-
-
-<!-- Modify the predict() function -->
-
-
-<!-- Optional: Add hidden eye logo to indicate disabled state (e.g., after limit) -->
-<style>
-  .disabled-module::before {
-    content: url('data:image/svg+xml;base64,...'); /* Base64 of hidden eye logo from query */
-    display: block;
-    margin: 0 auto;
-  }
-</style>
-<script>
-  // After limit check fails, add class to container or button
-  // e.g., document.querySelector('.container').classList.add('disabled-module');
-</script>
-<script>
-  let igvBrowser = null;
-
-  async function renderGenome(predChunks, genomeLength, gffData, dna_sequence) {
-    if (igvBrowser) {
-      igv.removeBrowser(igvBrowser);
-      igvBrowser = null;
-    }
-
-    // === Fix GFF: force seqid to "virus" ===
-    gffData = gffData
-      .split("\n")
-      .map(line => {
-        if (!line || line.startsWith("#")) return line;
-        const cols = line.split("\t");
-        cols[0] = "virus"; // overwrite seqid
-        return cols.join("\t");
-      })
-      .join("\n");
-
-    // === Merge contiguous chunks with same class ===
-    let merged = [];
-    let current = null;
-
-    predChunks.forEach(chunk => {
-      const cls = chunk.score > 0.5 ? 1 : 0; // 1=red, 0=green
-      if (!current) {
-        current = { start: chunk.start, end: chunk.end, cls, score: chunk.score };
-      } else if (cls === current.cls && chunk.start === current.end) {
-        // extend contiguous block
-        current.end = chunk.end;
-        current.score = (current.score + chunk.score) / 2; // average score
+      const predictButton = document.getElementById("predictButton");
+      if (predictButton) {
+        predictButton.addEventListener("click", predict);
       } else {
-        merged.push(current);
-        current = { start: chunk.start, end: chunk.end, cls, score: chunk.score };
+        console.error("predictButton not found in DOM");
       }
     });
-    if (current) merged.push(current);
-
-    // === BED track (continuous blocks) ===
-    let bed = "";
-    merged.forEach(block => {
-      const start0 = block.start - 1; // BED is 0-based
-      bed += `virus\t${start0}\t${block.end}\t.\t${block.score}\n`;
-    });
-
-    // === BedGraph track (wave) ===
-    let bedGraph = "track type=bedGraph name=\"PredictionScores\"\n";
-    predChunks.forEach(chunk => {
-      for (let pos = chunk.start - 1; pos < chunk.end; pos++) {
-        bedGraph += `virus\t${pos}\t${pos + 1}\t${chunk.score}\n`;
-      }
-    });
-
-    // === Blob URLs ===
-    const bedUrl = URL.createObjectURL(new Blob([bed], { type: "text/plain" }));
-    const bedGraphUrl = URL.createObjectURL(new Blob([bedGraph], { type: "text/plain" }));
-    const gffUrl = URL.createObjectURL(new Blob([gffData], { type: "text/plain" }));
-    const fastaUrl = URL.createObjectURL(
-      new Blob([`>virus\n${dna_sequence}`], { type: "text/plain" })
-    );
-
-    // === IGV options ===
-    const options = {
-      reference: {
-        id: "virus",
-        name: "Virus Genome",
-        fastaURL: fastaUrl
-      },
-      tracks: [
-        {
-          name: "Genome Annotations",
-          type: "annotation",
-          format: "gff3",
-          url: gffUrl,
-          displayMode: "EXPANDED",
-          color: "darkgreen"
-        },
-        {
-          name: "Pathogenicity Predictions",
-          type: "annotation",
-          format: "bed",
-          url: bedUrl,
-          color: feature => feature.score > 0.5 ? "red" : "green",
-          displayMode: "EXPANDED"
-        },
-        {
-          name: "Prediction Scores (Wave)",
-          type: "wig",
-          format: "bedgraph",
-          url: bedGraphUrl,
-          color: "blue",
-          autoscale: true,
-          min: 0,
-          max: 1,
-          displayMode: "EXPANDED"
-        }
-      ]
-    };
-
-    const igvDiv = document.getElementById("igv-container");
-    igvDiv.innerHTML = "";
-    igvBrowser = await igv.createBrowser(igvDiv, options);
-    console.log("✅ IGV loaded with merged blocks, no white gaps between chunks");
-  }
-</script>
-
-
-
-
-
-
-<!-- ===================== Cite Us Box ===================== -->
-<div class="cite-box">
-  <h3>📖 Cite us</h3>
-  <div class="cite-content">
-    <p>
-      <strong>Decoding the Genomic Landscape of Viruses Using Deep Learning: An Integrated Analysis</strong><br>
-      <span class="author">R Atif</span>, <span class="affiliation">IIUI</span>, <span class="year">2024</span><br>
-      <a href="https://scholar.google.com/citations?view_op=view_citation&hl=en&user=a4fOyR8AAAAJ&citation_for_view=a4fOyR8AAAAJ:d1gkVwhDpl0C" target="_blank">
-        Google Scholar Link
-      </a>
-    </p>
-    <button id="copyBtn" onclick="copyCitation()">📋 Copy</button>
-  </div>
-</div>
-
-<footer>
-  Built with ❤️ by <a href="https://bioaml.org" target="_blank">BioAML</a>
-</footer>  
+  </script>
 </body>
 </html>
+```
