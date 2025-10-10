@@ -182,6 +182,9 @@
         
 
 // Initialize and Authenticate
+// dashboard10.html (around line 185)
+
+// Initialize and Authenticate
         async function initializeFirebaseAndAuthenticate() {
             try {
                 if (Object.keys(firebaseConfig).length > 0) {
@@ -190,40 +193,30 @@
                     db = getFirestore(app);
                     setLogLevel('debug');
         
-                    let currentUser = auth.currentUser; // Start by checking the current user
+                    // --- USE onAuthStateChanged to detect existing sessions first ---
+                    const initialUserPromise = new Promise(resolve => {
+                        const unsubscribe = auth.onAuthStateChanged(user => {
+                            unsubscribe(); // Stop listening once we get the initial state
+                            resolve(user);
+                        });
+                    });
         
+                    let currentUser = await initialUserPromise;
+        
+                    // 1. Check for a Custom Token (Simulated environment)
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        // Case 1: Custom token is provided (Simulated environment)
                         const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
                         currentUser = userCredential.user;
                     } 
-                    // ❌ REMOVE the 'else if (currentUser === null)' check or signInAnonymously call.
-                    //    The actual email/password sign-in in signin.html already set the user.
-                    //    We rely on that session or the custom token above.
+                    // 2. Fallback to Anonymous ONLY if no user is signed in
+                    else if (!currentUser) {
+                        console.warn("No persistent user or custom token found. Falling back to anonymous sign-in.");
+                        // This is the line that caused the error, but we only run it if NO session is found.
+                        const userCredential = await signInAnonymously(auth);
+                        currentUser = userCredential.user;
+                    } 
                     
-                    // Note: If running in a regular web browser, the user session from signin.html 
-                    // should automatically populate auth.currentUser on page load.
-                    if (!currentUser) {
-                        // ⚠️ FALLBACK: If no custom token and no persistent session found (which shouldn't happen after email/password sign-in), 
-                        //    use anonymous sign-in, but ONLY if it's explicitly allowed/needed for this flow.
-                        //    Since this is what caused the error, let's assume the user is expected 
-                        //    to be signed in by the signin.html redirect.
-                        //
-                        //    For now, let's keep the existing logic structure but ensure we check `currentUser` 
-                        //    before attempting any new sign-ins.
-                        
-                        // RESTORED FIX LOGIC: Relying on the signin.html session being active.
-                        // If currentUser is null here, it means the persistent session failed, 
-                        // so we can fallback to anonymous sign-in only in the ELSE block.
-        
-                        if (!currentUser) {
-                            console.warn("No active session found. Attempting Anonymous sign-in (Simulated environment fallback).");
-                            const userCredential = await signInAnonymously(auth);
-                            currentUser = userCredential.user;
-                        }
-                    }
-                    
-                    // Standard user profile update logic remains
+                    // 3. User Profile Update
                     if (currentUser && (!currentUser.displayName || nameFromUrl)) {
                         console.log(`Setting displayName to: ${nameToSet}`);
                         await updateProfile(currentUser, {
@@ -232,10 +225,10 @@
                         currentUser = auth.currentUser;
                     }
                     
-                    // This now correctly loads the user from the active session or the custom token
+                    // 4. Load info (will prioritize sessionStorage if available, which it is after sign-in)
                     loadUserInfo(currentUser);
                 } else {
-                    // ... (rest of the simulated code remains the same) ...
+                    // Simulated User Data (if Firebase config is missing)
                     console.warn("Firebase config not available. Using simulated user data.");
                     loadUserInfo({
                         email: "simulated.user@bioaml.com",
@@ -244,11 +237,13 @@
                     });
                 }
             } catch (e) {
+                // Crucial change: log the error but still rely on sessionStorage for username display
                 console.error("Firebase authentication failed:", e);
-                // This is crucial: even on error, we attempt to load info, which will use the sessionStorage data
-                loadUserInfo(null); // Use the existing sessionStorage data
+                loadUserInfo(null); 
             }
-        } 
+        }
+
+// ... rest of the script ...
         function loadUserInfo(user) {
             // 1. Check Session Storage for Name/Email
             const sessionName = sessionStorage.getItem('userName');
