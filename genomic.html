@@ -291,6 +291,37 @@
         await setDoc(userRef, { usage: { [module]: { [currentYear]: { [currentMonth]: 1 } } } });
       }
     }
+    async function checkUsageCount(uid, module) {
+      if (!db || !uid) return false;
+      const userRef = doc(db, 'users', uid);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        
+        if (userData.usage && userData.usage[module] && userData.usage[module][currentYear] && userData.usage[module][currentYear][currentMonth]) {
+          const usageCount = userData.usage[module][currentYear][currentMonth];
+          const planLimit = getPlanLimit(module); // implement this function to get the plan limit
+          if (usageCount >= planLimit) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+    function getPlanLimit(module) {
+      // implement this function to get the plan limit
+      // for example:
+      const planLimits = {
+        'free_plan': 3,
+        'basic_plan': 30,
+        'premium_plan': null // null for unlimited
+      };
+      const userPlan = getUserPlan(); // implement this function to get the user's plan
+      return planLimits[userPlan];
+    }  
     // Define predict function
     async function predict() {
       if (!currentUser) {
@@ -321,7 +352,14 @@
       //   alert("⚠️ Free tier limit reached (1 prediction). Upgrade to continue.");
       //   return;
       // }
-
+      if (auth.currentUser) {
+        const canMakePrediction = await checkUsageCount(auth.currentUser.uid, moduleName);
+        // ...
+      }
+      if (!canMakePrediction) {
+        alert("You've reached the limit for this module. Please upgrade your plan.");
+        return;
+      }  
       outputBox.style.display = "none";
       spinner.style.display = "block";
 
