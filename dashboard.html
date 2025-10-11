@@ -440,15 +440,15 @@
 
         // Add this function to get the user's plan
         async function getUserPlan(uid) {
-          if (!uid) return 'free_plan'; // default plan if no user is signed in
           try {
-            const userDocRef = doc(db, `users/${uid}/user_data/profile`);
+            const userDocRef = doc(db, `users/${uid}`);
             const userDoc = await getDoc(userDocRef);
+            console.log(userDoc.data()); // Log the document data
             if (userDoc.exists()) {
               const userData = userDoc.data();
               return userData.subscription;
             } else {
-              return 'free_plan'; // default plan if no subscription is found
+              return 'free_plan'; // default plan if no document is found
             }
           } catch (error) {
             console.error("Error fetching user plan:", error);
