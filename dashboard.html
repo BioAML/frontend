@@ -452,7 +452,8 @@
               const userData = userDoc.data();
               console.log("User document data:", userData); // Detailed logging
               console.log("User document subscription data:", userData.subscription); // Detailed logging  
-              const subscription = userData.subscription || 'free_plan_subsc';
+              const subscription = userData.subscription
+              console.log(`No user document found for UID: ${subscription}. Defaulting to 'free_plan_defau'.`);
               if (!['free', 'basic', 'premium'].includes(subscription)) {
                 console.warn(`Invalid subscription value: ${subscription}. Defaulting to 'free_plan_default'.`);
                 return 'free_plan_no';
