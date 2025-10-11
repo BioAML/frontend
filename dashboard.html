@@ -455,6 +455,7 @@
             
             // Fetch the document
             const userDoc = await getDoc(userProfileRef);
+            console.log("User document data:", userDoc); // Detailed logging
             if (userDoc.exists()) {
               const userData = userDoc.data();
               console.log("User document data:", userData); // Detailed logging
