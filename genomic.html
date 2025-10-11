@@ -283,7 +283,7 @@
       }
 
       const predictionsRef = collection(db, `users/${currentUser.uid}/predictions`);
-      const q = query(predictionsRef, where("module", "==", "Pathogenicity"));
+      const q = query(predictionsRef, where("module", "==", "Genomic"));
       const snapshot = await getCountFromServer(q);
       const count = snapshot.data().count;
 
@@ -327,7 +327,7 @@
         );
 
         const predictionData = {
-          module: "Pathogenicity",
+          module: "Genomic",
           date: new Date().toISOString(),
           result: data.result.label_name || "Unknown",
           score: data.result.confidence || 0,
