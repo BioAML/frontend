@@ -483,22 +483,21 @@
             }
           }
         
-            data.services.forEach(service => {
-              const quota = data.quota[service];
-              if (!quota) return;
-              const isUnlimited = quota.limit === null;
-              const used = quota.used;
-              const limit = quota.limit;
-              const remainingText = isUnlimited ? 'Unlimited' : `${limit - used} remaining`;
-              const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
-              const style = getServiceStyle(service);
-            
-              // Check if the prediction button should be disabled
-              const isFreeLimitReached = !isUnlimited && used >= limit;
-              const buttonDisabledClass = isFreeLimitReached ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
-                
+          data.services.forEach(service => {
+            const quota = data.quota[service];
+            if (!quota) return;
+            const isUnlimited = quota.limit === null;
+            const used = quota.used;
+            const limit = quota.limit;
+            const remainingText = isUnlimited ? 'Unlimited' : `${limit - used} remaining`;
+            const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
+            const style = getServiceStyle(service);
+            const plan = quota.isFree ? 'free' : (isUnlimited ? 'premium' : 'basic');
+            const planColor = plan === 'free' ? 'bg-red-500' : (plan === 'basic' ? 'bg-yellow-500' : 'bg-green-500');
+        
             // Check if the prediction button should be disabled
-            const predictionCount = counts[service] || 0;
+            const isFreeLimitReached = !isUnlimited && used >= limit;
+            const buttonDisabledClass = isFreeLimitReached ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
         
             const moduleSpecificActions = `
               <div class="flex space-x-3">
@@ -517,7 +516,8 @@
               </div>
             `;
             modulesHtml += `
-              <div class="card bg-white p-6 rounded-xl shadow-xl border-t-8 ${style.primaryBorder} flex flex-col justify-between">
+              <div class="card bg-white p-6 rounded-xl shadow-xl border-t-8 ${style.primaryBorder} flex flex-col justify-between relative">
+                <div class="absolute top-4 right-4 ${planColor} w-4 h-4 rounded-full"></div>
                 <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-100">
                   <h3 class="text-2xl font-extrabold text-gray-900">${service} Module</h3>
                   <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-500">${style.icon}</svg>
