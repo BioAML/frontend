@@ -440,6 +440,7 @@
 
         // Add this function to get the user's plan
         async function getUserPlan(uid) {
+          if (!uid) return 'free'; // default plan if no user is signed in
           try {
             const userDocRef = doc(db, `users/${uid}/user_data/profile`);
             const userDoc = await getDoc(userDocRef);
@@ -447,11 +448,11 @@
               const userData = userDoc.data();
               return userData.subscription;
             } else {
-              return 'free_plan'; // default to free plan if no subscription is found
+              return 'free'; // default plan if no subscription is found
             }
           } catch (error) {
             console.error("Error fetching user plan:", error);
-            return 'free'; // default to free plan if an error occurs
+            return 'free'; // default plan if an error occurs
           }
         }
         async function renderModuleCards(data) {
@@ -476,22 +477,11 @@
             }
           }
           let userPlan;
-          auth.onAuthStateChanged(async (user) => {
-              if (user) {
-                // User is signed in
-                try {
-                  userPlan = await getUserPlan(user.uid);
-                  console.log(`User Plan declared1: ${userPlan}`);
-                } catch (error) {
-                  console.error("Error fetching user plan:", error);
-                  userPlan = 'free'; // default plan
-                }
-              } else {
-                // User is signed out
-                userPlan = 'free'; // default plan
-                console.log(`User Plan declared2: ${userPlan}`);
-              }
-            });               
+          if (auth.currentUser) {
+            userPlan = await getUserPlan(auth.currentUser.uid);
+          } else {
+            userPlan = 'free'; // default plan
+          }            
           for (const service of data.services) {
             const quota = data.quota[service];
             if (!quota) continue;
