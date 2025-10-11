@@ -267,22 +267,25 @@
       const currentDate = new Date();
       const currentMonth = currentDate.getMonth();
       const currentYear = currentDate.getFullYear();
+      const currentKey = `${currentYear}-${currentMonth}`;
     
       if (userDoc.exists()) {
         const userData = userDoc.data();
         if (!userData.usage) {
           userData.usage = {};
         }
-        if (!userData.usage[module]) {
+        if (typeof userData.usage[module] === 'number') {
+          userData.usage[module] = { [currentKey]: userData.usage[module] };
+        } else if (!userData.usage[module]) {
           userData.usage[module] = {};
         }
-        if (!userData.usage[module][`${currentYear}-${currentMonth}`]) {
-          userData.usage[module][`${currentYear}-${currentMonth}`] = 0;
+        if (!userData.usage[module][currentKey]) {
+          userData.usage[module][currentKey] = 0;
         }
-        userData.usage[module][`${currentYear}-${currentMonth}`]++;
+        userData.usage[module][currentKey]++;
         await setDoc(userRef, userData, { merge: true });
       } else {
-        await setDoc(userRef, { usage: { [module]: { [`${currentYear}-${currentMonth}`]: 1 } } });
+        await setDoc(userRef, { usage: { [module]: { [currentKey]: 1 } } });
       }
     }
     async function checkUsageCount(uid, module) {
