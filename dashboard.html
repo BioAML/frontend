@@ -477,9 +477,10 @@
               } catch (error) {
                 console.error("Error fetching user plan:", error);
               }
-            } else {
-              userPlan = 'free'; // default plan
-            }                
+            }
+            // else {
+            //   userPlan = 'free'; // default plan
+            // }                
           for (const service of data.services) {
             const quota = data.quota[service];
             if (!quota) continue;
