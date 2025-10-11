@@ -222,7 +222,7 @@
     // Firebase Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, getCountFromServer, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // Firebase Configuration
     const firebaseConfig = {
@@ -260,7 +260,24 @@
         });
       });
     }
-
+    async function updateUsageCountInFirebase(uid, module) {
+      if (!db || !uid) return;
+      const userRef = doc(db, 'users', uid);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (!userData.usage) {
+          userData.usage = {};
+        }
+        if (!userData.usage[module]) {
+          userData.usage[module] = 0;
+        }
+        userData.usage[module]++;
+        await setDoc(userRef, userData, { merge: true });
+      } else {
+        await setDoc(userRef, { usage: { [module]: 1 } });
+      }
+    }
     // Define predict function
     async function predict() {
       if (!currentUser) {
@@ -339,6 +356,9 @@
         await addDoc(predictionsRef, predictionData);
         console.log("Prediction saved successfully");
 
+        if (auth.currentUser) {
+          await updateUsageCountInFirebase(auth.currentUser.uid, module);
+        }
       } catch (error) {
         alert("❌ Network error: " + error.message);
         spinner.style.display = "none";
