@@ -320,6 +320,16 @@
       const userPlan = getUserPlan(); // implement this function to get the user's plan
       return planLimits[userPlan];
     }  
+    async function getUserPlan(uid) {
+      const userDocRef = doc(db, `artifacts/${appId}/users/${uid}/user_data/profile`);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return userData.subscription;
+      } else {
+        return null; // or throw an error
+      }
+    }  
     // Define predict function
     async function predict() {
       if (!currentUser) {
@@ -351,6 +361,8 @@
       //   return;
       // }
       const module = 'Genomic';
+      const userPlan = getUserPlan();
+      if (userPlan === 'free') {
       if (auth.currentUser) {
         const canMakePrediction = await checkUsageCount(auth.currentUser.uid, module);
         if (!canMakePrediction) {
@@ -358,6 +370,12 @@
           return;
         }
       }  
+      }
+       else if (userPlan === 'basic') {
+        // Allow unlimited predictions
+      } else if (userPlan === 'premium'){
+        // Handle unknown subscription tier
+      }
       outputBox.style.display = "none";
       spinner.style.display = "block";
 
