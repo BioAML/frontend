@@ -371,17 +371,7 @@
           { key: 'Premium Plan', subscriptions: ['premium_plan'] },
         ];
 
-        // Define Free Tier Quotas and usage for unsubscribed services
-        const FREE_TIER_QUOTAS = {
-            // Test Case: Angiography is EXPIRED (used >= limit)
-            'Angiography': { limit: 5, used: 5, total_used: [1, 1, 1, 2], isExpired: true }, 
-            
-            // Genomic is still active
-            'Genomic': { limit: 5, used: 3, total_used: [1, 1, 1, 0], isExpired: false },     
-            
-            // Radiology is not used
-            'Radiology': { limit: 5, used: 0, total_used: [0, 0, 0, 0], isExpired: false }
-        };
+
         
         // ... PLANS_CATALOG definition follows ...
         let currentScenarioIndex = 0;
