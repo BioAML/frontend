@@ -294,11 +294,12 @@
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth();
         const currentYear = currentDate.getFullYear();
-        
-        if (userData.usage && userData.usage[module] && userData.usage[module][currentYear] && userData.usage[module][currentYear][currentMonth]) {
-          const usageCount = userData.usage[module][currentYear][currentMonth];
+        const currentKey = `${currentYear}-${currentMonth}`;
+    
+        if (userData.usage && userData.usage[module] && userData.usage[module][currentKey]) {
+          const usageCount = userData.usage[module][currentKey];
           const planLimit = getPlanLimit(module); // implement this function to get the plan limit
-          if (usageCount >= planLimit) {
+          if (planLimit !== null && usageCount >= planLimit) {
             return false;
           }
         }
