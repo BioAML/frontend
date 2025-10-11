@@ -352,8 +352,9 @@
       //   alert("⚠️ Free tier limit reached (1 prediction). Upgrade to continue.");
       //   return;
       // }
+      const module = 'Genomic';
       if (auth.currentUser) {
-        const canMakePrediction = await checkUsageCount(auth.currentUser.uid, moduleName);
+        const canMakePrediction = await checkUsageCount(auth.currentUser.uid, module);
         // ...
       }
       if (!canMakePrediction) {
@@ -406,7 +407,6 @@
         console.log("Saving prediction:", predictionData);
         await addDoc(predictionsRef, predictionData);
         console.log("Prediction saved successfully");
-        const module = 'Genomic';
 
         if (auth.currentUser) {
           await updateUsageCountInFirebase(auth.currentUser.uid, module);
