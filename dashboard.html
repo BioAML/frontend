@@ -136,686 +136,671 @@
             </div>
         </div>
     </div>
-<script type="module">
-  // Firebase Imports
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, setLogLevel, collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setLogLevel, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  // Firebase Globals
-  let auth, db;
-
-  // Configuration Check
-  const firebaseConfig = {
-    apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
-    authDomain: "bioaml.firebaseapp.com",
-    projectId: "bioaml",
-    storageBucket: "bioaml.firebasestorage.app",
-    messagingSenderId: "778735157645",
-    appId: "1:778735157645:web:1f1580bb3596c0aa18fdc4",
-    measurementId: "G-3KLFW5G4P3"
-  };
-
-  // NAME HANDLING LOGIC
-  function getUrlParameter(name) {
-    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-    var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-    var results = regex.exec(location.search);
-    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-  }
-
-  const nameFromUrl = getUrlParameter('name');
-  const defaultPlaceholderName = "Guest User";
-  const nameToSet = nameFromUrl || defaultPlaceholderName;
-
-  // Initialize and Authenticate
-  async function initializeFirebaseAndAuthenticate() {
-    try {
-      if (Object.keys(firebaseConfig).length > 0) {
-        const app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        setLogLevel('debug');
-
-        const initialUserPromise = new Promise((resolve, reject) => {
-          const unsubscribe = auth.onAuthStateChanged(
-            user => {
-              console.log("Auth state changed. User:", user ? user.uid : "null");
-              unsubscribe();
-              resolve(user);
-            },
-            error => {
-              console.error("Auth state error:", error);
-              reject(error);
-            }
-          );
-        });
-
-        let currentUser = await initialUserPromise;
-
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          console.log("Attempting custom token sign-in");
-          try {
-            const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
-            currentUser = userCredential.user;
-            console.log("Signed in with custom token. User:", currentUser.uid);
-          } catch (tokenError) {
-            console.error("Custom token sign-in failed:", tokenError);
-          }
-        }
-
-        if (!currentUser) {
-          console.log("No user found. Attempting anonymous sign-in");
-          try {
-            const userCredential = await signInAnonymously(auth);
-            currentUser = userCredential.user;
-            console.log("Signed in anonymously. User:", currentUser.uid);
-            const userDocRef = doc(db, `users/${currentUser.uid}`);
-            await setDoc(userDocRef, { subscription: "free", createdAt: new Date().toISOString() }, { merge: true });
-          } catch (anonError) {
-            console.error("Anonymous sign-in failed:", anonError);
-            throw anonError;
-          }
-        }
-
-        if (currentUser && (!currentUser.displayName || nameFromUrl)) {
-          console.log(`Setting displayName to: ${nameToSet}`);
-          await updateProfile(currentUser, { displayName: nameToSet });
-          currentUser = auth.currentUser;
-        }
-
-        loadUserInfo(currentUser);
-        return currentUser;
-      } else {
-        console.warn("Firebase config not available. Using simulated user data.");
-        const simulatedUser = {
-          email: "simulated.user@bioaml.com",
-          uid: crypto.randomUUID(),
-          displayName: nameToSet
+        // Firebase Globals
+        let auth, db;
+        
+        // Configuration Check
+        const firebaseConfig = {
+          apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
+          authDomain: "bioaml.firebaseapp.com",
+          projectId: "bioaml",
+          storageBucket: "bioaml.firebasestorage.app",
+          messagingSenderId: "778735157645",
+          appId: "1:778735157645:web:1f1580bb3596c0aa18fdc4",
+          measurementId: "G-3KLFW5G4P3"
         };
-        loadUserInfo(simulatedUser);
-        return simulatedUser;
-      }
-    } catch (e) {
-      console.error("Firebase authentication failed:", e.message);
-      loadUserInfo(null);
-      return null;
-    }
-  }
-
-  function loadUserInfo(user) {
-    const sessionName = sessionStorage.getItem('userName');
-    const sessionEmail = sessionStorage.getItem('userEmail');
-    if (sessionName && sessionEmail) {
-      document.getElementById('userName').textContent = sessionName;
-      document.getElementById('userEmail').textContent = sessionEmail;
-      return;
-    }
-
-    if (user) {
-      const nameText = user.displayName || user.email?.split('@')[0] || `User #${user.uid.substring(0, 8)}`;
-      const emailText = user.email || `UID: ${user.uid}`;
-      document.getElementById('userName').textContent = nameText;
-      document.getElementById('userEmail').textContent = emailText;
-    } else {
-      document.getElementById('userName').textContent = "Guest User";
-      document.getElementById('userEmail').textContent = "Please log in";
-    }
-  }
-
-  window.toggleDropdown = function() {
-    const menu = document.getElementById('userDropdownMenu');
-    menu.classList.toggle('hidden');
-    if (!menu.classList.contains('hidden')) {
-      setTimeout(() => {
-        menu.classList.remove('opacity-0', 'scale-95');
-        menu.classList.add('opacity-100', 'scale-100');
-      }, 10);
-    } else {
-      menu.classList.remove('opacity-100', 'scale-100');
-      menu.classList.add('opacity-0', 'scale-95');
-    }
-  }
-
-  document.addEventListener('click', function(event) {
-    const userMenuContainer = document.getElementById('userMenu');
-    const userDropdownMenu = document.getElementById('userDropdownMenu');
-    if (
-      userMenuContainer &&
-      userDropdownMenu &&
-      !userMenuContainer.contains(event.target) &&
-      !userDropdownMenu.classList.contains('hidden')
-    ) {
-      userDropdownMenu.classList.remove('opacity-100', 'scale-100');
-      userDropdownMenu.classList.add('opacity-0', 'scale-95');
-      setTimeout(() => {
-        userDropdownMenu.classList.add('hidden');
-      }, 300);
-    }
-  });
-
-  const SERVICE_STYLES = {
-    'Genomic': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<path d="M12 2l10 20-10-5-10 5 10-20z"/><path d="M12 2v20"/>' },
-    'Angiography': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0-7 17l.95-.95"/><path d="M12 2a10 10 0 0 1 7 17l-.95-.95"/>' },
-    'Radiology': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x="12" y="3" x2="12" y2="21"/>' },
-    'Default': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<circle cx="12" cy="12" r="10"/>' }
-  };
-
-  const PROGRESS_REPORTS = {
-    'Angiography': [
-      { id: 'A100', type: 'Angiography', result: 'Fair (65)', date: '2025-09-20', score: 65 },
-      { id: 'A101', type: 'Angiography', result: 'Medium (70)', date: '2025-09-22', score: 70 },
-      { id: 'A102', type: 'Angiography', result: 'Good (80)', date: '2025-09-25', score: 80 },
-      { id: 'A103', type: 'Angiography', result: 'Very Good (88)', date: '2025-09-28', score: 88 },
-      { id: 'A104', type: 'Angiography', result: 'Excellent (95)', date: '2025-10-02', score: 95 },
-    ],
-    'Genomic': [
-      { id: 'G100', type: 'Genomic', result: 'Low (60)', date: '2025-09-20', score: 60 },
-      { id: 'G101', type: 'Genomic', result: 'Medium (75)', date: '2025-09-22', score: 75 },
-      { id: 'G102', type: 'Genomic', result: 'Good (82)', date: '2025-09-25', score: 82 },
-      { id: 'G103', type: 'Genomic', result: 'Very Good (90)', date: '2025-09-28', score: 90 },
-      { id: 'G104', type: 'Genomic', result: 'Excellent (97)', date: '2025-10-02', score: 97 },
-    ],
-    'Radiology': [
-      { id: 'R100', type: 'Radiology', result: 'Fair (62)', date: '2025-09-20', score: 62 },
-      { id: 'R101', type: 'Radiology', result: 'Medium (73)', date: '2025-09-22', score: 73 },
-      { id: 'R102', type: 'Radiology', result: 'Good (85)', date: '2025-09-25', score: 85 },
-      { id: 'R103', type: 'Radiology', result: 'Very Good (89)', date: '2025-09-28', score: 89 },
-      { id: 'R104', type: 'Radiology', result: 'Excellent (94)', date: '2025-10-02', score: 94 },
-    ]
-  };
-
-  const PLANS_CATALOG = {
-    'free': {
-      name: "Free Plan",
-      description: "Includes 3 predictions per module",
-      services: ['Genomic', 'Angiography', 'Radiology'],
-      quota: {
-        Genomic: { limit: 3, used: 0 },
-        Angiography: { limit: 3, used: 0 },
-        Radiology: { limit: 3, used: 0 },
-      },
-    },
-    'basic': {
-      name: "Basic Plan",
-      description: "Includes 30 predictions per module",
-      services: ['Genomic', 'Angiography', 'Radiology'],
-      quota: {
-        Genomic: { limit: 30, used: 0 },
-        Angiography: { limit: 30, used: 0 },
-        Radiology: { limit: 30, used: 0 },
-      },
-    },
-    'premium': {
-      name: "Premium Plan",
-      description: "Includes unlimited predictions per module",
-      services: ['Genomic', 'Angiography', 'Radiology'],
-      quota: {
-        Genomic: { limit: null, used: 0 },
-        Angiography: { limit: null, used: 0 },
-        Radiology: { limit: null, used: 0 },
-      },
-    },
-  };
-
-  const SUBSCRIPTION_SCENARIOS = [
-    { key: 'Free Plan', subscriptions: ['free'] },
-    { key: 'Basic Plan', subscriptions: ['basic'] },
-    { key: 'Premium Plan', subscriptions: ['premium'] },
-  ];
-
-  let currentScenarioIndex = 0;
-  let progressChartInstance = null;
-  let currentModule = 'Angiography';
-
-  function aggregateUserDataFromSubscriptions(subscriptionKeys) {
-    const aggregatedData = {
-      activePlans: [],
-      services: new Set(),
-      quota: {},
-      reports: [],
-      paidServices: new Set()
-    };
-
-    subscriptionKeys.forEach(key => {
-      const plan = PLANS_CATALOG[key];
-      if (!plan) return;
-      aggregatedData.activePlans.push(plan.name);
-      plan.services.forEach(service => {
-        aggregatedData.services.add(service);
-        aggregatedData.paidServices.add(service);
-        const newQuota = plan.quota[service];
-        if (!aggregatedData.quota[service]) {
-          aggregatedData.quota[service] = { ...newQuota, isFree: false };
-        } else {
-          let existingQuota = aggregatedData.quota[service];
-          if (existingQuota.limit === null || newQuota.limit === null) {
-            existingQuota.limit = null;
-          } else {
-            existingQuota.limit += newQuota.limit;
-          }
+        // --- NAME HANDLING LOGIC ---
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
         }
-      });
-    });
+        
+        const nameFromUrl = getUrlParameter('name');
+        const defaultPlaceholderName = "Guest User";
+        const nameToSet = nameFromUrl || defaultPlaceholderName;
+        
 
-    if (aggregatedData.activePlans.length === 0) {
-      const freePlan = PLANS_CATALOG['free'];
-      freePlan.services.forEach(service => {
-        aggregatedData.services.add(service);
-        aggregatedData.quota[service] = { ...freePlan.quota[service], isFree: true };
-      });
-    }
+// Initialize and Authenticate
+// dashboard10.html (around line 185)
 
-    aggregatedData.services = Array.from(aggregatedData.services);
-    return aggregatedData;
-  }
-
-  async function renderDashboard(scenario) {
-    const data = aggregateUserDataFromSubscriptions(scenario.subscriptions);
-    await renderModuleCards(data);
-    renderActivityGraph(data.quota, data.services);
-    await renderStoredAnalysis();
-  }
-
-  function getServiceStyle(serviceName) {
-    return SERVICE_STYLES[serviceName] || SERVICE_STYLES.Default;
-  }
-
-  async function getUserPlan(uid) {
-    try {
-      if (!db || !uid) {
-        console.warn("Firestore or UID not available. Returning default 'free'.");
-        return 'free';
-      }
-      const userDocRef = doc(db, `users/${uid}`);
-      console.log("Fetching plan for UID:", uid);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        console.log("User document data:", userData);
-        const subscription = userData.subscription || 'free';
-        console.log("User subscription:", subscription);
-        if (!['free', 'basic', 'premium'].includes(subscription)) {
-          console.warn(`Invalid subscription value: ${subscription}. Defaulting to 'free'.`);
-          return 'free';
-        }
-        return subscription;
-      } else {
-        console.log(`No user document found for UID: ${uid}. Defaulting to 'free'.`);
-        return 'free';
-      }
-    } catch (error) {
-      console.error("Error fetching user plan:", error.message);
-      return 'free';
-    }
-  }
-
-  async function renderModuleCards(data) {
-    const moduleGrid = document.getElementById('moduleGrid');
-    const noModulesMessage = document.getElementById('noModulesMessage');
-    if (!moduleGrid || !noModulesMessage) {
-      console.error("Required DOM elements missing: moduleGrid=", moduleGrid, "noModulesMessage=", noModulesMessage);
-      return;
-    }
-
-    let modulesHtml = '';
-    if (data.services.length === 0) {
-      moduleGrid.innerHTML = '';
-      noModulesMessage.style.display = 'block';
-      return;
-    }
-    noModulesMessage.style.display = 'none';
-
-    let counts = {};
-    if (auth.currentUser) {
-      try {
-        const result = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
-        counts = result.counts;
-      } catch (error) {
-        console.error("Error fetching stored analysis:", error);
-      }
-    }
-
-    let userPlan;
-    if (auth.currentUser) {
-      userPlan = await getUserPlan(auth.currentUser.uid);
-      console.log(`User Plan: ${userPlan}`);
-    } else {
-      userPlan = 'free';
-      console.log("No authenticated user. Defaulting to 'free'.");
-    }
-
-    const planColorMap = {
-      'free': 'bg-red-500',
-      'basic': 'bg-yellow-500',
-      'premium': 'bg-green-500'
-    };
-    const planColor = planColorMap[userPlan] || 'bg-red-500';
-
-    for (const service of data.services) {
-      const quota = data.quota[service];
-      if (!quota) continue;
-      const isUnlimited = quota.limit === null;
-      const used = quota.used;
-      const limit = quota.limit;
-      const remainingText = isUnlimited ? 'Unlimited' : `${limit - used} remaining`;
-      const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
-      const style = getServiceStyle(service);
-
-      const isFreeLimitReached = !isUnlimited && used >= limit;
-      const buttonDisabledClass = isFreeLimitReached ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
-
-      const moduleSpecificActions = `
-        <div class="flex space-x-3">
-          <a href="${service.toLowerCase()}.html" class="btn-flex px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md text-center transform hover:scale-105 ${buttonDisabledClass}">
-            New Prediction
-          </a>
-          <button onclick="showProgressModal('${service}')" class="btn-flex px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm text-center">
-            View Progress
-          </button>
-        </div>
-        <div class="mt-3">
-          <a href="pricing.html?module=${service}" class="px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm w-full text-center flex items-center justify-center block">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            Manage Subscription
-          </a>
-        </div>
-      `;
-
-      modulesHtml += `
-        <div class="card bg-white p-6 rounded-xl shadow-xl border-t-8 ${style.primaryBorder} flex flex-col justify-between relative">
-          <div class="absolute top-4 right-4 ${planColor} w-4 h-4 rounded-full"></div>
-          <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-100">
-            <h3 class="text-2xl font-extrabold text-gray-900">${service} Module</h3>
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-500">${style.icon}</svg>
-          </div>
-          <div class="mb-4">
-            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Monthly Usage</p>
-            <div class="flex items-end justify-between">
-              <span class="text-4xl font-black text-gray-900">${used}</span>
-              <span class="text-xl font-bold ${isUnlimited ? 'text-green-600' : 'text-gray-500'}">${isUnlimited ? 'Unlimited' : `/ ${limit}`}</span>
-            </div>
-          </div>
-          <div class="space-y-2 mb-6">
-            <p class="text-sm text-gray-600 font-medium">${remainingText} left</p>
-            <div class="progress-bar bg-gray-200 relative">
-              <div class="bg-${style.color}-600 absolute top-0 left-0 h-full" style="width: ${percentageUsed}%;"></div>
-            </div>
-          </div>
-          <div class="pt-3 border-t border-gray-100">
-            ${moduleSpecificActions}
-          </div>
-        </div>
-      `;
-    }
-
-    moduleGrid.innerHTML = modulesHtml;
-  }
-
-  function renderActivityGraph(quotaData, activeServices) {
-    const container = document.getElementById('activityGraphContainer');
-    if (!container) {
-      console.error("Activity graph container not found");
-      return;
-    }
-    const weeklyData = {};
-    let maxCount = 1;
-    activeServices.forEach(service => {
-      const dataPoints = quotaData[service]?.total_used || [];
-      for (let i = 0; i < dataPoints.length; i++) {
-        const count = dataPoints[i];
-        weeklyData[i] = weeklyData[i] || {};
-        weeklyData[i][service] = count;
-        const totalForWeek = Object.values(weeklyData[i]).reduce((a, b) => a + b, 0);
-        if (totalForWeek > maxCount) {
-          maxCount = totalForWeek;
-        }
-      }
-    });
-    const totalWeeks = 4;
-    const weekLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-    let barsHtml = '';
-    for (let i = 0; i < totalWeeks; i++) {
-      const weekCounts = weeklyData[i] || {};
-      const totalCount = Object.values(weekCounts).reduce((a, b) => a + b, 0);
-      const totalHeight = (totalCount / maxCount) * 200;
-      let segmentsHtml = '';
-      let cumulativeHeight = 0;
-      activeServices.slice().reverse().forEach((service) => {
-        const count = weekCounts[service] || 0;
-        if (count > 0) {
-          const style = getServiceStyle(service);
-          const segmentHeight = totalCount > 0 ? (count / totalCount) * totalHeight : 0;
-          let roundedClass = cumulativeHeight === 0 ? 'rounded-t-lg' : '';
-          segmentsHtml = `
-            <div class="${roundedClass} bg-${style.color}-500" 
-                 style="height: ${segmentHeight}px; min-height: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" 
-                 title="${count} ${service} Predictions">
-            </div>
-          ` + segmentsHtml;
-          cumulativeHeight += segmentHeight;
-        }
-      });
-      barsHtml += `
-        <div class="flex flex-col items-center group relative h-full">
-          <div class="absolute bottom-0 w-10 flex flex-col items-center justify-end" style="height: ${totalHeight}px;">
-            ${segmentsHtml}
-          </div>
-          <span class="text-xs mt-2 absolute -bottom-6 font-medium text-gray-700">${weekLabels[i]}</span>
-          <span class="text-sm text-gray-900 font-extrabold absolute top-0 transform -translate-y-full transition duration-300 group-hover:scale-110">${totalCount > 0 ? totalCount : ''}</span>
-        </div>
-      `;
-    }
-    let legendHtml = activeServices.length > 0 ? activeServices.map(service => {
-      const style = getServiceStyle(service);
-      return `<span class="flex items-center text-sm font-medium text-gray-600">
-                <span class="w-3 h-3 rounded-full mr-2 shadow-sm bg-${style.color}-500"></span>${service}
-              </span>`;
-    }).join('') : '';
-    const graphContent = `
-      <div class="flex justify-around items-end h-72 p-4 space-x-12 relative">
-        <span class="absolute left-0 top-0 text-xs font-semibold text-gray-500">Max: ${maxCount}</span>
-        ${barsHtml}
-      </div>
-      <div class="flex justify-center space-x-8 text-sm text-gray-500 mt-10 p-2 border-t border-gray-200">
-        ${legendHtml}
-      </div>
-    `;
-    container.innerHTML = graphContent;
-  }
-
-  window.showProgressModal = function(module) {
-    currentModule = module;
-    const modal = document.getElementById('progressModal');
-    const modalContent = document.getElementById('progressModalContent');
-    const modalTitle = document.getElementById('progressModalTitle');
-    if (!modal || !modalContent || !modalTitle) {
-      console.error("Progress modal elements missing:", { modal, modalContent, modalTitle });
-      return;
-    }
-    modalTitle.textContent = `${module} Prediction Progress`;
-    modal.style.display = 'flex';
-    setTimeout(() => {
-      modal.classList.add('opacity-100');
-      modalContent.classList.remove('scale-95', 'opacity-0');
-      modalContent.classList.add('scale-100', 'opacity-100');
-    }, 10);
-    renderProgressChart(PROGRESS_REPORTS[module] || []);
-  }
-
-  window.closeProgressModal = function() {
-    const modal = document.getElementById('progressModal');
-    const modalContent = document.getElementById('progressModalContent');
-    if (!modal || !modalContent) {
-      console.error("Progress modal elements missing:", { modal, modalContent });
-      return;
-    }
-    modalContent.classList.remove('scale-100', 'opacity-100');
-    modalContent.classList.add('scale-95', 'opacity-0');
-    modal.classList.remove('opacity-100');
-    setTimeout(() => {
-      modal.style.display = 'none';
-    }, 300);
-  }
-
-  function renderProgressChart(reports) {
-    if (progressChartInstance) {
-      progressChartInstance.destroy();
-    }
-    const chartData = reports.map((r, index) => ({
-      x: `Pred. ${index + 1}`,
-      y: r.score
-    }));
-    const labels = chartData.map(d => d.x);
-    const scores = chartData.map(d => d.y);
-    const ctx = document.getElementById('progressChart').getContext('2d');
-    progressChartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Prediction Score (%)',
-          data: scores,
-          borderColor: getServiceStyle(currentModule).hex,
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          tension: 0.4,
-          pointRadius: 6,
-          pointBackgroundColor: getServiceStyle(currentModule).hex,
-          pointHoverRadius: 8,
-          fill: true,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            min: 50,
-            max: 100,
-            title: { display: true, text: 'Score (%)' },
-            grid: { color: 'rgba(0, 0, 0, 0.05)' }
-          },
-          x: {
-            title: { display: true, text: 'Prediction Attempt' },
-            grid: { display: false }
-          }
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (context) => `Score: ${context.parsed.y}%`
+// Initialize and Authenticate
+        async function initializeFirebaseAndAuthenticate() {
+            try {
+                if (Object.keys(firebaseConfig).length > 0) {
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    setLogLevel('debug');
+        
+                    // --- USE onAuthStateChanged to detect existing sessions first ---
+                    const initialUserPromise = new Promise(resolve => {
+                        const unsubscribe = auth.onAuthStateChanged(user => {
+                            unsubscribe(); // Stop listening once we get the initial state
+                            resolve(user);
+                        });
+                    });
+        
+                    let currentUser = await initialUserPromise;
+        
+                    // 1. Check for a Custom Token (Simulated environment)
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
+                        currentUser = userCredential.user;
+                    } 
+                    // 2. Fallback to Anonymous ONLY if no user is signed in
+                    else if (!currentUser) {
+                        console.warn("No persistent user or custom token found. Falling back to anonymous sign-in.");
+                        // This is the line that caused the error, but we only run it if NO session is found.
+                        const userCredential = await signInAnonymously(auth);
+                        currentUser = userCredential.user;
+                    } 
+                    
+                    // 3. User Profile Update
+                    if (currentUser && (!currentUser.displayName || nameFromUrl)) {
+                        console.log(`Setting displayName to: ${nameToSet}`);
+                        await updateProfile(currentUser, {
+                            displayName: nameToSet
+                        });
+                        currentUser = auth.currentUser;
+                    }
+                    
+                    // 4. Load info (will prioritize sessionStorage if available, which it is after sign-in)
+                    loadUserInfo(currentUser);
+                } else {
+                    // Simulated User Data (if Firebase config is missing)
+                    console.warn("Firebase config not available. Using simulated user data.");
+                    loadUserInfo({
+                        email: "simulated.user@bioaml.com",
+                        uid: crypto.randomUUID(),
+                        displayName: nameToSet
+                    });
+                }
+            } catch (e) {
+                // Crucial change: log the error but still rely on sessionStorage for username display
+                console.error("Firebase authentication failed:", e);
+                loadUserInfo(null); 
             }
+        }
+
+// ... rest of the script ...
+        function loadUserInfo(user) {
+            // 1. Check Session Storage for Name/Email
+            const sessionName = sessionStorage.getItem('userName');
+            const sessionEmail = sessionStorage.getItem('userEmail');
+            
+            // 2. Use Session Storage data if available
+            if (sessionName && sessionEmail) {
+                document.getElementById('userName').textContent = sessionName;
+                document.getElementById('userEmail').textContent = sessionEmail;
+                return; // Exit the function since we've loaded the data
+            }
+
+            // 3. Fallback to Firebase/Simulated User object (Original logic)
+            if (user) {
+                // Use user.displayName or user.email prefix if they exist, otherwise a placeholder
+                const nameText = user.displayName || user.email?.split('@')[0] || `User #${user.uid.substring(0, 8)}`;
+                const emailText = user.email || `UID: ${user.uid}`;
+                document.getElementById('userName').textContent = nameText;
+                document.getElementById('userEmail').textContent = emailText;
+            } else {
+                // Fallback for no user/error
+                document.getElementById('userName').textContent = "Guest User";
+                document.getElementById('userEmail').textContent = "Please log in";
+            }
+        }
+        // Add this code inside your <script type="module"> block
+        
+        // Function to open/close the dropdown menu
+        window.toggleDropdown = function() {
+            const menu = document.getElementById('userDropdownMenu');
+            
+            // Toggle the 'hidden' class
+            menu.classList.toggle('hidden');
+        
+            // Apply animation classes
+            if (!menu.classList.contains('hidden')) {
+                // Show menu
+                setTimeout(() => {
+                    menu.classList.remove('opacity-0', 'scale-95');
+                    menu.classList.add('opacity-100', 'scale-100');
+                }, 10);
+            } else {
+                // Hide menu
+                menu.classList.remove('opacity-100', 'scale-100');
+                menu.classList.add('opacity-0', 'scale-95');
+            }
+        }
+        
+        // Function to close the dropdown when clicking outside of it
+        document.addEventListener('click', function(event) {
+            const userMenuContainer = document.getElementById('userMenu');
+            const userDropdownMenu = document.getElementById('userDropdownMenu');
+            
+            // Check if the click occurred outside the menu container AND the menu is currently visible
+            if (userMenuContainer && userDropdownMenu && 
+                !userMenuContainer.contains(event.target) &&
+                !userDropdownMenu.classList.contains('hidden')) 
+            {
+                // Close the menu smoothly
+                userDropdownMenu.classList.remove('opacity-100', 'scale-100');
+                userDropdownMenu.classList.add('opacity-0', 'scale-95');
+                // Wait for the transition to finish before hiding completely
+                setTimeout(() => {
+                    userDropdownMenu.classList.add('hidden');
+                }, 300); // 300ms matches the 'duration-300' class
+            }
+        });
+        // --- SERVICE STYLES ---
+        const SERVICE_STYLES = {
+            'Genomic': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<path d="M12 2l10 20-10-5-10 5 10-20z"/><path d="M12 2v20"/>' },
+            'Angiography': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0-7 17l.95-.95"/><path d="M12 2a10 10 0 0 1 7 17l-.95-.95"/>' },
+            'Radiology': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x="12" y="3" x2="12" y2="21"/>' },
+            'Default': { color: 'green', primaryBorder: 'border-green-500', primaryText: 'text-green-700', bg: 'bg-green-50', hoverBorder: 'border-green-400', hex: '#10b981', icon: '<circle cx="12" cy="12" r="10"/>' }
+        };
+
+        // Simulated Progress Reports
+        const PROGRESS_REPORTS = {
+            'Angiography': [
+                { id: 'A100', type: 'Angiography', result: 'Fair (65)', date: '2025-09-20', score: 65 },
+                { id: 'A101', type: 'Angiography', result: 'Medium (70)', date: '2025-09-22', score: 70 },
+                { id: 'A102', type: 'Angiography', result: 'Good (80)', date: '2025-09-25', score: 80 },
+                { id: 'A103', type: 'Angiography', result: 'Very Good (88)', date: '2025-09-28', score: 88 },
+                { id: 'A104', type: 'Angiography', result: 'Excellent (95)', date: '2025-10-02', score: 95 },
+            ],
+            'Genomic': [
+                { id: 'G100', type: 'Genomic', result: 'Low (60)', date: '2025-09-20', score: 60 },
+                { id: 'G101', type: 'Genomic', result: 'Medium (75)', date: '2025-09-22', score: 75 },
+                { id: 'G102', type: 'Genomic', result: 'Good (82)', date: '2025-09-25', score: 82 },
+                { id: 'G103', type: 'Genomic', result: 'Very Good (90)', date: '2025-09-28', score: 90 },
+                { id: 'G104', type: 'Genomic', result: 'Excellent (97)', date: '2025-10-02', score: 97 },
+            ],
+            'Radiology': [
+                { id: 'R100', type: 'Radiology', result: 'Fair (62)', date: '2025-09-20', score: 62 },
+                { id: 'R101', type: 'Radiology', result: 'Medium (73)', date: '2025-09-22', score: 73 },
+                { id: 'R102', type: 'Radiology', result: 'Good (85)', date: '2025-09-25', score: 85 },
+                { id: 'R103', type: 'Radiology', result: 'Very Good (89)', date: '2025-09-28', score: 89 },
+                { id: 'R104', type: 'Radiology', result: 'Excellent (94)', date: '2025-10-02', score: 94 },
+            ]
+        };
+        
+        // Plans Catalog
+        const PLANS_CATALOG = {
+          'free': {
+            name: "Free Plan",
+            description: "Includes 3 predictions per module",
+            services: ['Genomic', 'Angiography', 'Radiology'],
+            quota: {
+              Genomic: { limit: 3, used: 0 },
+              Angiography: { limit: 3, used: 0 },
+              Radiology: { limit: 3, used: 0 },
+            },
           },
-          title: {
-            display: true,
-            text: `${currentModule} Score Improvement Timeline`,
-            font: { size: 16, weight: 'bold' }
+          'basic': {
+            name: "Basic Plan",
+            description: "Includes 30 predictions per module",
+            services: ['Genomic', 'Angiography', 'Radiology'],
+            quota: {
+              Genomic: { limit: 30, used: 0 },
+              Angiography: { limit: 30, used: 0 },
+              Radiology: { limit: 30, used: 0 },
+            },
+          },
+          'premium': {
+            name: "Premium Plan",
+            description: "Includes unlimited predictions per module",
+            services: ['Genomic', 'Angiography', 'Radiology'],
+            quota: {
+              Genomic: { limit: null, used: 0 },
+              Angiography: { limit: null, used: 0 },
+              Radiology: { limit: null, used: 0 },
+            },
+          },
+        };
+        
+        const SUBSCRIPTION_SCENARIOS = [
+          { key: 'Free Plan', subscriptions: ['free'] },
+          { key: 'Basic Plan', subscriptions: ['basic'] },
+          { key: 'Premium Plan', subscriptions: ['premium'] },
+        ];
+
+
+        
+        // ... PLANS_CATALOG definition follows ...
+        let currentScenarioIndex = 0;
+        let progressChartInstance = null;
+        let currentModule = 'Angiography';
+
+        // dashboard (7).html (around line 496)
+        
+        function aggregateUserDataFromSubscriptions(subscriptionKeys) {
+          const aggregatedData = {
+            activePlans: [],
+            services: new Set(),
+            quota: {},
+            reports: [],
+            paidServices: new Set() // Tracks which services are covered by paid plans
+          };
+          
+          // 1. Process Paid Subscriptions
+          subscriptionKeys.forEach(key => {
+            const plan = PLANS_CATALOG[key];
+            if (!plan) return;
+            aggregatedData.activePlans.push(plan.name);
+            
+            plan.services.forEach(service => {
+              aggregatedData.services.add(service);
+              aggregatedData.paidServices.add(service); // Mark as paid
+              const newQuota = plan.quota[service];
+              
+              // Aggregation logic for paid services
+              if (!aggregatedData.quota[service]) {
+                aggregatedData.quota[service] = { ...newQuota, isFree: false };
+              } else {
+                let existingQuota = aggregatedData.quota[service];
+                if (existingQuota.limit === null || newQuota.limit === null) {
+                  existingQuota.limit = null;
+                } else {
+                  existingQuota.limit += newQuota.limit;
+                }
+              }
+            });
+          });
+          
+          // 2. Add free plan services if no paid subscription
+          if (aggregatedData.activePlans.length === 0) {
+            const freePlan = PLANS_CATALOG['free'];
+            freePlan.services.forEach(service => {
+              aggregatedData.services.add(service);
+              aggregatedData.quota[service] = { ...freePlan.quota[service], isFree: true };
+            });
+          }
+          
+          aggregatedData.services = Array.from(aggregatedData.services);
+          return aggregatedData;
+        }
+
+        async function renderDashboard(scenario) {
+          const data = aggregateUserDataFromSubscriptions(scenario.subscriptions);
+          await renderModuleCards(data);
+          renderActivityGraph(data.quota, data.services);
+          await renderStoredAnalysis();
+        }
+
+        function getServiceStyle(serviceName) {
+            return SERVICE_STYLES[serviceName] || SERVICE_STYLES.Default;
+        }
+
+        // Add this function to get the user's plan
+        async function getUserPlan(uid) {
+          try {
+            if (!db || !uid) {
+              console.warn("Firestore or UID not available. Returning default 'free'.");
+              return 'free_plan';
+            }
+            const userDocRef = doc(db, `users/${uid}`);
+            console.log("User id:", uid); 
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              console.log("User document data:", userData); // Detailed logging
+              console.log("User document subscription data:", userData.subscription); // Detailed logging  
+              const subscription = userData.subscription
+              console.log(`No user document found for UID: ${subscription}. Defaulting to 'free_plan'.`);
+              if (!['free', 'basic', 'premium'].includes(subscription)) {
+                console.warn(`Invalid subscription value: ${subscription}. Defaulting to 'free_plan'.`);
+                return 'free_plan';
+              }
+              return subscription;
+            } else {
+              console.log(`No user document found for UID: ${uid}. Defaulting to 'free_plan'.`);
+              return 'free_plan';
+            }
+          } catch (error) {
+            console.error("Error fetching user plan:", error.message);
+            return 'free_plan';
           }
         }
-      }
-    });
-  }
+        async function renderModuleCards(data) {
+          const moduleGrid = document.getElementById('moduleGrid');
+          const noModulesMessage = document.getElementById('noModulesMessage');
+          let modulesHtml = '';
+          if (data.services.length === 0) {
+            moduleGrid.innerHTML = '';
+            noModulesMessage.style.display = 'block';
+            return;
+          }
+          noModulesMessage.style.display = 'none';
+        
+          let counts = {};
+          if (auth.currentUser) {
+            try {
+              const result = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
+              counts = result.counts;
+              
+            } catch (error) {
+              console.error("Error fetching stored analysis:", error);
+            }
+          }
+          let userPlan;
+          if (auth.currentUser) {
+            userPlan = await getUserPlan(auth.currentUser.uid);
+            console.log(`User Plan declared: ${userPlan}`);  
+          } else {
+            userPlan = 'free_plan_default'; // default plan
+          }            
+          for (const service of data.services) {
+            const quota = data.quota[service];
+            if (!quota) continue;
+            const isUnlimited = quota.limit === null;
+            const used = quota.used;
+            const limit = quota.limit;
+            const remainingText = isUnlimited ? 'Unlimited' : `${limit - used} remaining`;
+            const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
+            const style = getServiceStyle(service);
+            const plan = userPlan;
+            console.log(`User Plan declared: ${userPlan}`);
+            const planColor = plan === 'free' ? 'bg-red-500' : (plan === 'basic' ? 'bg-yellow-500' : 'bg-green-500');
+        
+            // Check if the prediction button should be disabled
+            const isFreeLimitReached = !isUnlimited && used >= limit;
+            const buttonDisabledClass = isFreeLimitReached ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
+        
+            const moduleSpecificActions = `
+              <div class="flex space-x-3">
+                <a href="${service.toLowerCase()}.html" class="btn-flex px-3 py-2 text-sm font-bold rounded-lg bg-${style.color}-600 text-white hover:bg-${style.color}-700 transition duration-200 shadow-md text-center transform hover:scale-105 ${buttonDisabledClass}">
+                  New Prediction
+                </a>
+                <button onclick="showProgressModal('${service}')" class="btn-flex px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm text-center">
+                  View Progress
+                </button>
+              </div>
+              <div class="mt-3">
+                <a href="pricing.html?module=${service}" class="px-3 py-2 text-sm font-bold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition duration-200 shadow-sm w-full text-center flex items-center justify-center block">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  Manage Subscription
+                </a>
+              </div>
+            `;
+            modulesHtml += `
+              <div class="card bg-white p-6 rounded-xl shadow-xl border-t-8 ${style.primaryBorder} flex flex-col justify-between relative">
+                <div class="absolute top-4 right-4 ${planColor} w-4 h-4 rounded-full"></div>
+                <div class="flex items-start justify-between mb-4 pb-3 border-b border-gray-100">
+                  <h3 class="text-2xl font-extrabold text-gray-900">${service} Module</h3>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-500">${style.icon}</svg>
+                </div>
+                <div class="mb-4">
+                  <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Monthly Usage</p>
+                  <div class="flex items-end justify-between">
+                    <span class="text-4xl font-black text-gray-900">${used}</span>
+                    <span class="text-xl font-bold ${isUnlimited ? 'text-green-600' : 'text-gray-500'}">${isUnlimited ? 'Unlimited' : `/ ${limit}`}</span>
+                  </div>
+                </div>
+                <div class="space-y-2 mb-6">
+                  <p class="text-sm text-gray-600 font-medium">${remainingText} left</p>
+                  <div class="progress-bar bg-gray-200 relative">
+                    <div class="bg-${style.color}-600 absolute top-0 left-0 h-full" style="width: ${percentageUsed}%;"></div>
+                  </div>
+                </div>
+                <div class="pt-3 border-t border-gray-100">
+                  ${moduleSpecificActions}
+                </div>
+              </div>
+            `;
+          };
+        
+          moduleGrid.innerHTML = modulesHtml;
+        }
 
-  async function cyclePlan() {
-    currentScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
-    const currentScenario = SUBSCRIPTION_SCENARIOS[currentScenarioIndex];
-    const nextScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
-    const nextScenarioName = SUBSCRIPTION_SCENARIOS[nextScenarioIndex].key;
-    const togglePlanBtn = document.getElementById('togglePlanBtn');
-    if (togglePlanBtn) {
-      togglePlanBtn.textContent = `Click here to simulate the '${nextScenarioName}' scenario!`;
-    }
-    await renderDashboard(currentScenario);
-  }
+        function renderActivityGraph(quotaData, activeServices) {
+            const container = document.getElementById('activityGraphContainer');
+            const weeklyData = {};
+            let maxCount = 1;
+            activeServices.forEach(service => {
+                const dataPoints = quotaData[service]?.total_used || [];
+                for (let i = 0; i < dataPoints.length; i++) {
+                    const count = dataPoints[i];
+                    weeklyData[i] = weeklyData[i] || {};
+                    weeklyData[i][service] = count;
+                    const totalForWeek = Object.values(weeklyData[i]).reduce((a, b) => a + b, 0);
+                    if (totalForWeek > maxCount) {
+                        maxCount = totalForWeek;
+                    }
+                }
+            });
+            const totalWeeks = 4;
+            const weekLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+            let barsHtml = '';
+            for (let i = 0; i < totalWeeks; i++) {
+                const weekCounts = weeklyData[i] || {};
+                const totalCount = Object.values(weekCounts).reduce((a, b) => a + b, 0);
+                const totalHeight = (totalCount / maxCount) * 200;
+                let segmentsHtml = '';
+                let cumulativeHeight = 0;
+                activeServices.slice().reverse().forEach((service) => {
+                    const count = weekCounts[service] || 0;
+                    if (count > 0) {
+                        const style = getServiceStyle(service);
+                        const segmentHeight = totalCount > 0 ? (count / totalCount) * totalHeight : 0;
+                        let roundedClass = cumulativeHeight === 0 ? 'rounded-t-lg' : '';
+                        segmentsHtml = `
+                            <div class="${roundedClass} bg-${style.color}-500" 
+                                style="height: ${segmentHeight}px; min-height: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" 
+                                title="${count} ${service} Predictions">
+                            </div>
+                        ` + segmentsHtml;
+                        cumulativeHeight += segmentHeight;
+                    }
+                });
+                barsHtml += `
+                    <div class="flex flex-col items-center group relative h-full">
+                        <div class="absolute bottom-0 w-10 flex flex-col items-center justify-end" style="height: ${totalHeight}px;">
+                            ${segmentsHtml}
+                        </div>
+                        <span class="text-xs mt-2 absolute -bottom-6 font-medium text-gray-700">${weekLabels[i]}</span>
+                        <span class="text-sm text-gray-900 font-extrabold absolute top-0 transform -translate-y-full transition duration-300 group-hover:scale-110">${totalCount > 0 ? totalCount : ''}</span>
+                    </div>
+                `;
+            }
+            let legendHtml = activeServices.length > 0 ? activeServices.map(service => {
+                const style = getServiceStyle(service);
+                return `<span class="flex items-center text-sm font-medium text-gray-600">
+                            <span class="w-3 h-3 rounded-full mr-2 shadow-sm bg-${style.color}-500"></span>${service}
+                        </span>`;
+            }).join('') : '';
+            const graphContent = `
+                <div class="flex justify-around items-end h-72 p-4 space-x-12 relative">
+                    <span class="absolute left-0 top-0 text-xs font-semibold text-gray-500">Max: ${maxCount}</span>
+                    ${barsHtml}
+                </div>
+                <div class="flex justify-center space-x-8 text-sm text-gray-500 mt-10 p-2 border-t border-gray-200">
+                    ${legendHtml}
+                </div>
+            `;
+            container.innerHTML = graphContent;
+        }
 
-  async function fetchStoredAnalysisFromFirebase(uid) {
-    if (!db || !uid) return { predictions: [], counts: {} };
-    const predictionsRef = collection(db, `users/${uid}/predictions`);
-    const snapshot = await getDocs(predictionsRef);
-    const predictions = snapshot.docs.map(doc => ({
-      id: doc.data().id,
-      type: doc.data().module,
-      date: doc.data().date,
-      result: doc.data().result,
-      score: doc.data().score,
-      color: doc.data().score > 0.5 ? 'text-red-600' : 'text-green-600'
-    }));
 
-    const counts = {};
-    predictions.forEach(prediction => {
-      if (!counts[prediction.type]) {
-        counts[prediction.type] = 1;
-      } else {
-        counts[prediction.type]++;
-      }
-    });
 
-    return { predictions, counts };
-  }
+        window.showProgressModal = function(module) {
+            currentModule = module;
+            const modal = document.getElementById('progressModal');
+            const modalContent = document.getElementById('progressModalContent');
+            const modalTitle = document.getElementById('progressModalTitle');
+            modalTitle.textContent = `${module} Prediction Progress`;
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            renderProgressChart(PROGRESS_REPORTS[module] || []);
+        }
 
-  async function renderStoredAnalysis() {
-    if (!auth.currentUser) {
-      console.log("No authenticated user. Skipping renderStoredAnalysis.");
-      return;
-    }
-    const listContainer = document.getElementById('storedAnalysisList');
-    const noMessage = document.getElementById('noAnalysisMessage');
-    if (!listContainer || !noMessage) {
-      console.error("Required DOM elements missing: listContainer=", listContainer, "noMessage=", noMessage);
-      return;
-    }
+        window.closeProgressModal = function() {
+            const modal = document.getElementById('progressModal');
+            const modalContent = document.getElementById('progressModalContent');
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            modal.classList.remove('opacity-100');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
 
-    const result = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
-    const reports = result.predictions;
-    if (reports.length === 0) {
-      listContainer.innerHTML = '';
-      noMessage.style.display = 'block';
-      return;
-    }
-    noMessage.style.display = 'none';
-    const sortedReports = reports.sort((a, b) => new Date(b.date) - new Date(a.date));
-    let reportsHtml = sortedReports.map(report => {
-      const style = getServiceStyle(report.type);
-      const linkPath = `${report.type.toLowerCase()}.html?id=${report.id}`;
-      const resultText = report.result || `Score: ${(report.score * 100).toFixed(2)}%`;
-      return `
-        <div class="p-5 border-l-4 ${style.primaryBorder} rounded-xl bg-white flex justify-between items-center shadow-lg hover:shadow-xl transition duration-300 hover:border-${style.color}-600">
-          <div class="flex items-center space-x-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-600"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <div>
-              <p class="font-bold text-lg text-gray-900">${report.type} Analysis - [Ref: ${report.id}]</p>
-              <p class="text-sm text-gray-600 mt-1">
-                Result: <span class="font-extrabold ${report.color || 'text-gray-900'}">${resultText}</span> 
-                <span class="ml-4 text-gray-400">|</span> 
-                <span class="ml-4">Completed on ${new Date(report.date).toLocaleDateString()}</span>
-              </p>
-            </div>
-          </div>
-          <a href="${linkPath}" class="text-green-500 hover:text-green-700 text-sm font-bold p-3 rounded-lg bg-green-50 hover:bg-green-100 transition duration-200 shadow-sm">
-            View Details
-          </a>
-        </div>
-      `;
-    }).join('');
-    listContainer.innerHTML = reportsHtml;
-  }
+        function renderProgressChart(reports) {
+            if (progressChartInstance) {
+                progressChartInstance.destroy();
+            }
+            const chartData = reports.map((r, index) => ({
+                x: `Pred. ${index + 1}`,
+                y: r.score
+            }));
+            const labels = chartData.map(d => d.x);
+            const scores = chartData.map(d => d.y);
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            progressChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Prediction Score (%)',
+                        data: scores,
+                        borderColor: getServiceStyle(currentModule).hex,
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointBackgroundColor: getServiceStyle(currentModule).hex,
+                        pointHoverRadius: 8,
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 50,
+                            max: 100,
+                            title: { display: true, text: 'Score (%)' },
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Prediction Attempt' },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `Score: ${context.parsed.y}%`
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `${currentModule} Score Improvement Timeline`,
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    console.log("DOM fully loaded. Checking for noAnalysisMessage:", document.getElementById('noAnalysisMessage'));
-    await initializeFirebaseAndAuthenticate();
-    console.log("Auth after initialization:", auth.currentUser ? auth.currentUser.uid : "null");
-    await cyclePlan();
-    await renderStoredAnalysis();
-  });
-
-  const togglePlanBtn = document.getElementById('togglePlanBtn');
-  if (togglePlanBtn) {
-    togglePlanBtn.addEventListener('click', cyclePlan);
-  } else {
-    console.error("Toggle plan button not found");
-  }
-</script>
+        const togglePlanBtn = document.getElementById('togglePlanBtn');
+        function cyclePlan() {
+            currentScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
+            const currentScenario = SUBSCRIPTION_SCENARIOS[currentScenarioIndex];
+            const nextScenarioIndex = (currentScenarioIndex + 1) % SUBSCRIPTION_SCENARIOS.length;
+            const nextScenarioName = SUBSCRIPTION_SCENARIOS[nextScenarioIndex].key;
+            togglePlanBtn.textContent = `Click here to simulate the '${nextScenarioName}' scenario!`;
+            renderDashboard(currentScenario);
+        }
+        togglePlanBtn.addEventListener('click', cyclePlan);
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebaseAndAuthenticate();
+            cyclePlan();
+        });
+        async function fetchStoredAnalysisFromFirebase(uid) {
+          if (!db || !uid) return { predictions: [], counts: {} };
+          const predictionsRef = collection(db, `users/${uid}/predictions`);
+          const snapshot = await getDocs(predictionsRef);
+          const predictions = snapshot.docs.map(doc => ({
+            id: doc.data().id,
+            type: doc.data().module,
+            date: doc.data().date,
+            result: doc.data().result,
+            score: doc.data().score,
+            color: doc.data().score > 0.5 ? 'text-red-600' : 'text-green-600'
+          }));
+        
+          // Count predictions for each module
+          const counts = {};
+          predictions.forEach(prediction => {
+            if (!counts[prediction.type]) {
+              counts[prediction.type] = 1;
+            } else {
+              counts[prediction.type]++;
+            }
+          });
+        
+          return { predictions, counts };
+        }
+        
+          // Update renderStoredAnalysis to use fetched data
+        async function renderStoredAnalysis() {
+          if (!auth.currentUser) return;
+          const result = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
+          const reports = result.predictions;
+          const listContainer = document.getElementById('storedAnalysisList');
+          const noMessage = document.getElementById('noAnalysisMessage');
+          if (reports.length === 0) {
+            listContainer.innerHTML = '';
+            noMessage.style.display = 'block';
+            return;
+          }
+          noMessage.style.display = 'none';
+          const sortedReports = reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+          let reportsHtml = sortedReports.map(report => {
+            const style = getServiceStyle(report.type);
+            const linkPath = `${report.type.toLowerCase()}.html?id=${report.id}`;
+            const resultText = report.result || `Score: ${(report.score * 100).toFixed(2)}%`;
+            return `
+              <div class="p-5 border-l-4 ${style.primaryBorder} rounded-xl bg-white flex justify-between items-center shadow-lg hover:shadow-xl transition duration-300 hover:border-${style.color}-600">
+                <div class="flex items-center space-x-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-${style.color}-600"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <div>
+                    <p class="font-bold text-lg text-gray-900">${report.type} Analysis - [Ref: ${report.id}]</p>
+                    <p class="text-sm text-gray-600 mt-1">
+                      Result: <span class="font-extrabold ${report.color || 'text-gray-900'}">${resultText}</span> 
+                      <span class="ml-4 text-gray-400">|</span> 
+                      <span class="ml-4">Completed on ${new Date(report.date).toLocaleDateString()}</span>
+                    </p>
+                  </div>
+                </div>
+                <a href="${linkPath}" class="text-green-500 hover:text-green-700 text-sm font-bold p-3 rounded-lg bg-green-50 hover:bg-green-100 transition duration-200 shadow-sm">
+                  View Details
+                </a>
+              </div>
+            `;
+          }).join('');
+          listContainer.innerHTML = reportsHtml;
+        }
+        
+          // Ensure renderStoredAnalysis is called after authentication
+          document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebaseAndAuthenticate().then(() => {
+              renderStoredAnalysis();
+            });
+          });
+    </script>
     <!-- <script type="module">
       // Example: In aggregateUserDataFromSubscriptions, fetch real quotas
       async function aggregateUserDataFromSubscriptions() {
