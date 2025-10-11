@@ -471,18 +471,22 @@
             }
           }
           let userPlan;
-          if (auth.currentUser) {
-            console.log('Before try block')  
-            try {
-              userPlan = await getUserPlan(auth.currentUser.uid);
-              console.log(`User Plan declared1: ${userPlan}`); // log here
-            } catch (error) {
-              console.error("Error fetching user plan:", error);
-            }
-          } else {
-            userPlan = 'free'; // default plan
-            console.log(`User Plan declared2: ${userPlan}`); // log here
-          }               
+          auth.onAuthStateChanged(async (user) => {
+              if (user) {
+                // User is signed in
+                try {
+                  userPlan = await getUserPlan(user.uid);
+                  console.log(`User Plan declared1: ${userPlan}`);
+                } catch (error) {
+                  console.error("Error fetching user plan:", error);
+                  userPlan = 'free'; // default plan
+                }
+              } else {
+                // User is signed out
+                userPlan = 'free'; // default plan
+                console.log(`User Plan declared2: ${userPlan}`);
+              }
+            });               
           for (const service of data.services) {
             const quota = data.quota[service];
             if (!quota) continue;
