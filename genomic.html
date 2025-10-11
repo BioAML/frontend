@@ -262,21 +262,33 @@
     }
     async function updateUsageCountInFirebase(uid, module) {
       if (!db || !uid) return;
-      
       const userRef = doc(db, 'users', uid);
       const userDoc = await getDoc(userRef);
       if (userDoc.exists()) {
         const userData = userDoc.data();
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        
         if (!userData.usage) {
           userData.usage = {};
         }
         if (!userData.usage[module]) {
-          userData.usage[module] = 0;
+          userData.usage[module] = {};
         }
-        userData.usage[module]++;
+        if (!userData.usage[module][currentYear]) {
+          userData.usage[module][currentYear] = {};
+        }
+        if (!userData.usage[module][currentYear][currentMonth]) {
+          userData.usage[module][currentYear][currentMonth] = 0;
+        }
+        userData.usage[module][currentYear][currentMonth]++;
         await setDoc(userRef, userData, { merge: true });
       } else {
-        await setDoc(userRef, { usage: { [module]: 1 } });
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        await setDoc(userRef, { usage: { [module]: { [currentYear]: { [currentMonth]: 1 } } } });
       }
     }
     // Define predict function
