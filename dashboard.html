@@ -474,13 +474,13 @@
           if (auth.currentUser) {
             try {
               userPlan = await getUserPlan(auth.currentUser.uid);
-              console.log(`User Plan declared: ${userPlan}`); // log here
+              console.log(`User Plan declared1: ${userPlan}`); // log here
             } catch (error) {
               console.error("Error fetching user plan:", error);
             }
           } else {
             userPlan = 'free'; // default plan
-            console.log(`User Plan declared: ${userPlan}`); // log here
+            console.log(`User Plan declared2: ${userPlan}`); // log here
           }               
           for (const service of data.services) {
             const quota = data.quota[service];
@@ -492,7 +492,7 @@
             const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
             const style = getServiceStyle(service);
             const plan = userPlan;
-            console.log(`User Plan declared: ${userPlan}`);
+            // console.log(`User Plan declared: ${userPlan}`);
             const planColor = plan === 'free' ? 'bg-red-500' : (plan === 'basic' ? 'bg-yellow-500' : 'bg-green-500');
         
             // Check if the prediction button should be disabled
