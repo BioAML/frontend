@@ -333,47 +333,42 @@
         
         // Plans Catalog
         const PLANS_CATALOG = {
-            'core_research_plan': {
-                name: "Core Research Plan",
-                description: "Includes unlimited Genomic analysis and standard Angiography access (50 monthly predictions).",
-                services: ['Genomic', 'Angiography'],
-                quota: {
-                    Genomic: { limit: null, used: 25, total_used: [10, 15, 8, 12] },
-                    Angiography: { limit: 50, used: 18, total_used: [5, 4, 3, 6] },
-                },
-                reports: [
-                    ...PROGRESS_REPORTS['Angiography'],
-                    { id: 'G00123', type: 'Genomic', title: 'Pathogenicity Report', result: 'High Risk (85%)', date: '2025-09-28', color: 'text-red-600' },
-                ]
+          'free_plan': {
+            name: "Free Plan",
+            description: "Includes 3 predictions per module",
+            services: ['Genomic', 'Angiography', 'Radiology'],
+            quota: {
+              Genomic: { limit: 3, used: 0 },
+              Angiography: { limit: 3, used: 0 },
+              Radiology: { limit: 3, used: 0 },
             },
-            'radiology_addon': {
-                name: "Radiology Pro Add-on",
-                description: "An add-on providing 100 monthly scans for the Radiology AI module.",
-                services: ['Radiology'],
-                quota: {
-                    Radiology: { limit: 100, used: 55, total_used: [20, 15, 10, 10] }
-                },
-                reports: [
-                    { id: 'R001', type: 'Radiology', title: 'MRI Scan Analysis', result: 'High Confidence', date: '2025-10-18', color: 'text-green-600' },
-                ]
+          },
+          'basic_plan': {
+            name: "Basic Plan",
+            description: "Includes 30 predictions per module",
+            services: ['Genomic', 'Angiography', 'Radiology'],
+            quota: {
+              Genomic: { limit: 30, used: 0 },
+              Angiography: { limit: 30, used: 0 },
+              Radiology: { limit: 30, used: 0 },
             },
-            'angiography_booster': {
-                name: "Angiography Booster Pack",
-                description: "An extra 50 monthly predictions for the Angiography module.",
-                services: ['Angiography'],
-                quota: {
-                    Angiography: { limit: 50, used: 0, total_used: [0, 0, 0, 0] },
-                },
-                reports: []
-            }
+          },
+          'premium_plan': {
+            name: "Premium Plan",
+            description: "Includes unlimited predictions per module",
+            services: ['Genomic', 'Angiography', 'Radiology'],
+            quota: {
+              Genomic: { limit: null, used: 0 },
+              Angiography: { limit: null, used: 0 },
+              Radiology: { limit: null, used: 0 },
+            },
+          },
         };
-
-        // Subscription Scenarios
+        
         const SUBSCRIPTION_SCENARIOS = [
-            { key: 'Core Research Plan', subscriptions: ['core_research_plan'] },
-            { key: 'Core + Radiology Pro', subscriptions: ['core_research_plan', 'radiology_addon'] },
-            { key: 'Layered Quota Active', subscriptions: ['core_research_plan', 'angiography_booster'] },
-            { key: 'Free Tier (No Paid Subs)', subscriptions: [] }
+          { key: 'Free Plan', subscriptions: ['free_plan'] },
+          { key: 'Basic Plan', subscriptions: ['basic_plan'] },
+          { key: 'Premium Plan', subscriptions: ['premium_plan'] },
         ];
 
         // Define Free Tier Quotas and usage for unsubscribed services
@@ -486,21 +481,22 @@
             }
           }
         
-          data.services.forEach(service => {
-            const quota = data.quota[service];
-            if (!quota) return;
-            const isUnlimited = quota.limit === null;
-            const used = quota.used;
-            const limit = quota.limit;
-            const remainingText = isUnlimited ? 'Unlimited' : `${limit - used} remaining`;
-            const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
-            const style = getServiceStyle(service);
-        
+            data.services.forEach(service => {
+              const quota = data.quota[service];
+              if (!quota) return;
+              const isUnlimited = quota.limit === null;
+              const used = quota.used;
+              const limit = quota.limit;
+              const remainingText = isUnlimited ? 'Unlimited' : `${limit - used} remaining`;
+              const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
+              const style = getServiceStyle(service);
+            
+              // Check if the prediction button should be disabled
+              const isFreeLimitReached = !isUnlimited && used >= limit;
+              const buttonDisabledClass = isFreeLimitReached ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
+                
             // Check if the prediction button should be disabled
             const predictionCount = counts[service] || 0;
-            const isFreeLimitReached = predictionCount >= 3;
-            const buttonDisabledClass = isFreeLimitReached ? 'opacity-50 cursor-not-allowed pointer-events-none' : '';
-
         
             const moduleSpecificActions = `
               <div class="flex space-x-3">
