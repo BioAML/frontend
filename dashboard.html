@@ -790,7 +790,7 @@
             noMessage.style.display = 'block';
             return;
           }
-          noMessage.style.display = 'none';
+          // noMessage.style.display = 'none';
           const sortedReports = reports.sort((a, b) => new Date(b.date) - new Date(a.date));
           let reportsHtml = sortedReports.map(report => {
             const style = getServiceStyle(report.type);
