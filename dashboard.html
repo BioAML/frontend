@@ -465,11 +465,12 @@
             try {
               const result = await fetchStoredAnalysisFromFirebase(auth.currentUser.uid);
               counts = result.counts;
+              let userPlan = await getUserPlan(auth.currentUser.uid);  
             } catch (error) {
               console.error("Error fetching stored analysis:", error);
             }
           }
-          let userPlan = await getUserPlan(auth.currentUser.uid);        
+                
           data.services.forEach(service => {
             const quota = data.quota[service];
             if (!quota) return;
