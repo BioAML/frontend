@@ -724,10 +724,16 @@
             renderDashboard(currentScenario);
         }
         togglePlanBtn.addEventListener('click', cyclePlan);
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebaseAndAuthenticate();
-            cyclePlan();
-        });
+        // document.addEventListener('DOMContentLoaded', () => {
+        //     initializeFirebaseAndAuthenticate();
+        //     cyclePlan();
+        // });
+        document.addEventListener('DOMContentLoaded', async () => {
+          await initializeFirebaseAndAuthenticate();
+          console.log("Auth after initialization:", auth.currentUser ? auth.currentUser.uid : "null");
+          await cyclePlan(); // Await cyclePlan to ensure rendering happens after auth
+          await renderStoredAnalysis();
+        });    
         async function fetchStoredAnalysisFromFirebase(uid) {
           if (!db || !uid) return { predictions: [], counts: {} };
           const predictionsRef = collection(db, `users/${uid}/predictions`);
@@ -795,11 +801,11 @@
         }
         
           // Ensure renderStoredAnalysis is called after authentication
-          document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebaseAndAuthenticate().then(() => {
-              renderStoredAnalysis();
-            });
-          });
+          // document.addEventListener('DOMContentLoaded', () => {
+          //   initializeFirebaseAndAuthenticate().then(() => {
+          //     renderStoredAnalysis();
+          //   });
+          // });
     </script>
     <!-- <script type="module">
       // Example: In aggregateUserDataFromSubscriptions, fetch real quotas
