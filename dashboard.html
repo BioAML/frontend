@@ -493,7 +493,7 @@
             const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
             const style = getServiceStyle(service);
             const plan = userPlan;
-            // console.log(`User Plan declared: ${userPlan}`);
+            console.log(`User Plan declared: ${userPlan}`);
             const planColor = plan === 'free' ? 'bg-red-500' : (plan === 'basic' ? 'bg-yellow-500' : 'bg-green-500');
         
             // Check if the prediction button should be disabled
