@@ -478,7 +478,7 @@
                 console.error("Error fetching user plan:", error);
               }
             } else {
-              userPlan = 'free_plan'; // default plan
+              userPlan = 'free'; // default plan
             }                
           for (const service of data.services) {
             const quota = data.quota[service];
@@ -490,7 +490,7 @@
             const percentageUsed = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
             const style = getServiceStyle(service);
             // const plan = quota.isFree ? 'free' : (isUnlimited ? 'premium' : 'basic');
-            console.log(`User Plan: ${userPlan}`);
+            console.log(`User Plan declared: ${userPlan}`);
             const plan = userPlan;  
             const planColor = plan === 'free' ? 'bg-red-500' : (plan === 'basic' ? 'bg-yellow-500' : 'bg-green-500');
         
