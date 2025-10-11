@@ -472,6 +472,7 @@
           }
           let userPlan;
           if (auth.currentUser) {
+            console.log('Before try block')  
             try {
               userPlan = await getUserPlan(auth.currentUser.uid);
               console.log(`User Plan declared1: ${userPlan}`); // log here
