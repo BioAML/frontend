@@ -724,10 +724,23 @@
             renderDashboard(currentScenario);
         }
         togglePlanBtn.addEventListener('click', cyclePlan);
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebaseAndAuthenticate();
-            cyclePlan();
-        });
+        // This function will ensure everything runs only after Firebase is initialized.
+        function setupDashboard() {
+            // initializeFirebaseAndAuthenticate returns a promise
+            initializeFirebaseAndAuthenticate().then(() => {
+                // 1. Start the simulation/rendering flow
+                cyclePlan(); 
+                // 2. Render the stored analysis
+                renderStoredAnalysis(); 
+            }).catch(error => {
+                console.error("Failed to initialize dashboard after authentication attempt:", error);
+                // Fallback: Still try to render based on cached data or guest mode
+                cyclePlan();
+                renderStoredAnalysis();
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', setupDashboard);
         async function fetchStoredAnalysisFromFirebase(uid) {
           if (!db || !uid) return { predictions: [], counts: {} };
           const predictionsRef = collection(db, `users/${uid}/predictions`);
@@ -795,11 +808,11 @@
         }
         
           // Ensure renderStoredAnalysis is called after authentication
-          document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebaseAndAuthenticate().then(() => {
-              renderStoredAnalysis();
-            });
-          });
+          // document.addEventListener('DOMContentLoaded', () => {
+          //   initializeFirebaseAndAuthenticate().then(() => {
+          //     renderStoredAnalysis();
+          //   });
+          // });
     </script>
     <!-- <script type="module">
       // Example: In aggregateUserDataFromSubscriptions, fetch real quotas
