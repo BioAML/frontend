@@ -333,7 +333,7 @@
         
         // Plans Catalog
         const PLANS_CATALOG = {
-          'free_plan': {
+          'free': {
             name: "Free Plan",
             description: "Includes 3 predictions per module",
             services: ['Genomic', 'Angiography', 'Radiology'],
@@ -343,7 +343,7 @@
               Radiology: { limit: 3, used: 0 },
             },
           },
-          'basic_plan': {
+          'basic': {
             name: "Basic Plan",
             description: "Includes 30 predictions per module",
             services: ['Genomic', 'Angiography', 'Radiology'],
@@ -353,7 +353,7 @@
               Radiology: { limit: 30, used: 0 },
             },
           },
-          'premium_plan': {
+          'premium': {
             name: "Premium Plan",
             description: "Includes unlimited predictions per module",
             services: ['Genomic', 'Angiography', 'Radiology'],
@@ -366,9 +366,9 @@
         };
         
         const SUBSCRIPTION_SCENARIOS = [
-          { key: 'Free Plan', subscriptions: ['free_plan'] },
-          { key: 'Basic Plan', subscriptions: ['basic_plan'] },
-          { key: 'Premium Plan', subscriptions: ['premium_plan'] },
+          { key: 'Free Plan', subscriptions: ['free'] },
+          { key: 'Basic Plan', subscriptions: ['basic'] },
+          { key: 'Premium Plan', subscriptions: ['premium'] },
         ];
 
 
@@ -416,7 +416,7 @@
           
           // 2. Add free plan services if no paid subscription
           if (aggregatedData.activePlans.length === 0) {
-            const freePlan = PLANS_CATALOG['free_plan'];
+            const freePlan = PLANS_CATALOG['free'];
             freePlan.services.forEach(service => {
               aggregatedData.services.add(service);
               aggregatedData.quota[service] = { ...freePlan.quota[service], isFree: true };
@@ -442,8 +442,8 @@
         async function getUserPlan(uid) {
           try {
             if (!db || !uid) {
-              console.warn("Firestore or UID not available. Returning default 'free_plan'.");
-              return 'free_plan';
+              console.warn("Firestore or UID not available. Returning default 'free'.");
+              return 'free_plan_db_uid';
             }
             const userDocRef = doc(db, `users/${uid}`);
             console.log("User id:", uid); 
@@ -452,19 +452,19 @@
               const userData = userDoc.data();
               console.log("User document data:", userData); // Detailed logging
               console.log("User document subscription data:", userData.subscription); // Detailed logging  
-              const subscription = userData.subscription || 'free_plan';
+              const subscription = userData.subscription || 'free_plan_subsc';
               if (!['free', 'basic', 'premium'].includes(subscription)) {
-                console.warn(`Invalid subscription value: ${subscription}. Defaulting to 'free_plan'.`);
-                return 'free_plan';
+                console.warn(`Invalid subscription value: ${subscription}. Defaulting to 'free_plan_default'.`);
+                return 'free_plan_no';
               }
               return subscription;
             } else {
-              console.log(`No user document found for UID: ${uid}. Defaulting to 'free_plan'.`);
-              return 'free_plan';
+              console.log(`No user document found for UID: ${uid}. Defaulting to 'free_plan_defau'.`);
+              return 'free_plan_nodoc';
             }
           } catch (error) {
             console.error("Error fetching user plan:", error.message);
-            return 'free_plan';
+            return 'free_plan_except';
           }
         }
         async function renderModuleCards(data) {
@@ -493,7 +493,7 @@
             userPlan = await getUserPlan(auth.currentUser.uid);
             console.log(`User Plan declared: ${userPlan}`);  
           } else {
-            userPlan = 'free_plan'; // default plan
+            userPlan = 'free_plan_default'; // default plan
           }            
           for (const service of data.services) {
             const quota = data.quota[service];
