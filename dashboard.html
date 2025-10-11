@@ -453,13 +453,15 @@
               console.warn("Firestore or UID not available. Returning default 'free'.");
               return 'free_plan';
             }
-            const userProfileRef = doc(
-                db, 
-                `artifacts/${APP_ID}/users/${uid}/user_data/profile`
-            );
+            // const userProfileRef = doc(
+            //     db, 
+            //     `artifacts/${APP_ID}/users/${uid}/user_data/profile`
+            // );
             
-            // Fetch the document
-            const userDoc = await getDoc(userProfileRef);
+            // // Fetch the document
+            // const userDoc = await getDoc(userProfileRef);
+            const userDocRef = doc(db, `users/${uid}`);
+            const userDoc = await getDoc(userDocRef);              
             if (userDoc.exists()) {
               const userData = userDoc.data();
               console.log("User document data:", userData); // Detailed logging
