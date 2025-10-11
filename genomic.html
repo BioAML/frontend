@@ -305,10 +305,10 @@
       const snapshot = await getCountFromServer(q);
       const count = snapshot.data().count;
 
-      if (count >= 10) {
-        alert("⚠️ Free tier limit reached (1 prediction). Upgrade to continue.");
-        return;
-      }
+      // if (count >= 10) {
+      //   alert("⚠️ Free tier limit reached (1 prediction). Upgrade to continue.");
+      //   return;
+      // }
 
       outputBox.style.display = "none";
       spinner.style.display = "block";
