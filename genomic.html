@@ -262,7 +262,7 @@
     }
     async function updateUsageCountInFirebase(uid, module) {
       if (!db || !uid) return;
-      const module = 'Genomic';
+      
       const userRef = doc(db, 'users', uid);
       const userDoc = await getDoc(userRef);
       if (userDoc.exists()) {
@@ -356,6 +356,7 @@
         console.log("Saving prediction:", predictionData);
         await addDoc(predictionsRef, predictionData);
         console.log("Prediction saved successfully");
+        const module = 'Genomic';
 
         if (auth.currentUser) {
           await updateUsageCountInFirebase(auth.currentUser.uid, module);
