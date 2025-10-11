@@ -430,11 +430,16 @@
         }
 
         async function renderDashboard(scenario) {
+          const user = auth.currentUser;
+          if (!user) {
+            console.warn("No authenticated user detected in renderDashboard()");
+          }
           const data = aggregateUserDataFromSubscriptions(scenario.subscriptions);
-          await renderModuleCards(data);
+          await renderModuleCards(data, user);
           renderActivityGraph(data.quota, data.services);
           await renderStoredAnalysis();
         }
+
 
         function getServiceStyle(serviceName) {
             return SERVICE_STYLES[serviceName] || SERVICE_STYLES.Default;
@@ -475,7 +480,7 @@
             return 'free_plan';
           }
         }
-        async function renderModuleCards(data) {
+        async function renderModuleCards(data, user) {
           const moduleGrid = document.getElementById('moduleGrid');
           const noModulesMessage = document.getElementById('noModulesMessage');
           let modulesHtml = '';
@@ -497,12 +502,11 @@
             }
           }
           let userPlan;
-          if (auth.currentUser) {
-            userPlan = await getUserPlan(auth.currentUser.uid);
-            console.log(`User Plan declared: ${userPlan}`);  
-          } else {
-            userPlan = 'free_plan_default'; // default plan
-          }            
+        if (user) {
+          userPlan = await getUserPlan(user.uid);
+        } else {
+          userPlan = 'free_plan_default';
+        }        
           for (const service of data.services) {
             const quota = data.quota[service];
             if (!quota) continue;
