@@ -446,6 +446,7 @@
               return 'free_plan';
             }
             const userDocRef = doc(db, `users/${uid}`);
+            print(uid)
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists()) {
               const userData = userDoc.data();
