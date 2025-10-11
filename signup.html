@@ -146,7 +146,8 @@
                 name: name,
                 email: email,
                 createdAt: new Date().toISOString(),
-                role: 'free_user'
+                role: 'free_user',
+              subscription: 'free' // Add this line
             });
             console.log('User data saved to Firestore');
 
