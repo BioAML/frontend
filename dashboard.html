@@ -479,6 +479,7 @@
           let userPlan;
           if (auth.currentUser) {
             userPlan = await getUserPlan(auth.currentUser.uid);
+            console.log(`User Plan declared: ${userPlan}`);  
           } else {
             userPlan = 'free_plan'; // default plan
           }            
