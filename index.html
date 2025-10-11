@@ -1,102 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BioAML - AI-Driven Solutions</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-    .hover-scale {
-      transition: transform 0.3s ease-in-out;
-    }
-    .hover-scale:hover {
-      transform: scale(1.05);
-    }
-    .gradient-bg {
-      background: linear-gradient(135deg, #3b82f6, #10b981);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioAML - AI-Driven Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hover-scale {
+            transition: transform 0.3s ease-in-out;
+        }
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #3b82f6, #10b981);
+        }
+    </style>
+    <script type="module">
+        // Import the functions you need from the SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        
+        // Your Firebase configuration (Replace with your actual config)
+        const firebaseConfig = {
+          apiKey: "AIzaSyBEKINObrsmPdd-SPv-vD4v-gfJReAoYpM",
+          authDomain: "bioaml.firebaseapp.com",
+          projectId: "bioaml",
+          storageBucket: "bioaml.firebasestorage.app",
+          messagingSenderId: "778735157645",
+          appId: "1:778735157645:web:1f1580bb3596c0aa18fdc4",
+          measurementId: "G-3KLFW5G4P3"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        // Get the navigation container to update
+        const navLinksContainer = document.getElementById('nav-links');
+
+        // Function to update the navigation bar based on auth state
+        onAuthStateChanged(auth, (user) => {
+            navLinksContainer.innerHTML = ''; // Clear existing links
+
+            // Always display Modules and Pricing
+            navLinksContainer.innerHTML += `
+                <a href="#modules" class="hover:text-blue-400 transition duration-300">Modules</a>
+                <a href="pricing.html" class="hover:text-blue-400 transition duration-300">Pricing</a>
+            `;
+
+            if (user) {
+                // User is signed in: Show User Name, Dashboard, and Sign Out
+                const userName = user.displayName || user.email || 'User';
+                
+                navLinksContainer.innerHTML += `
+                    <span class="text-sm font-light text-gray-300 hidden sm:inline">Welcome,</span>
+                    <a href="dashboard.html" class="font-semibold hover:text-blue-400 transition duration-300">${userName}</a>
+                    <a href="dashboard.html" class="bg-blue-600 px-4 py-2 rounded-full font-semibold hover:bg-blue-700 transition duration-300">Dashboard</a>
+                    <a href="#" id="signOutBtn" class="bg-red-600 px-4 py-2 rounded-full font-semibold hover:bg-red-700 transition duration-300">Sign Out</a>
+                `;
+
+                // Add event listener for Sign Out
+                document.getElementById('signOutBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    signOut(auth).then(() => {
+                        // Sign-out successful, redirect to index (which will reload the unauthenticated links)
+                        window.location.href = 'index.html'; 
+                    }).catch((error) => {
+                        console.error('Sign Out Error:', error);
+                    });
+                });
+
+            } else {
+                // User is signed out: Show Sign In and Sign Up
+                navLinksContainer.innerHTML += `
+                    <a href="signin.html" class="hover:text-blue-400 transition duration-300">Sign In</a>
+                    <a href="signup.html" class="bg-blue-600 px-4 py-2 rounded-full font-semibold hover:bg-blue-700 transition duration-300">Sign Up</a>
+                `;
+            }
+        });
+    </script>
 </head>
 <body class="bg-gray-100 text-gray-800">
-  
-  <nav class="bg-gray-800 text-white p-4 sticky top-0 z-50 shadow-lg">
-      <div class="container mx-auto flex justify-between items-center">
-          <a href="index.html" class="text-2xl font-bold">BioAML</a>
-          <div class="space-x-6 flex items-center">
-              <a href="#modules" class="hover:text-blue-400 transition duration-300">Modules</a>
-              <a href="pricing.html" class="hover:text-blue-400 transition duration-300">Pricing</a>
-              <a href="signin.html" class="hover:text-blue-400 transition duration-300">Sign In</a>
-              <a href="signup.html" class="bg-blue-600 px-4 py-2 rounded-full font-semibold hover:bg-blue-700 transition duration-300">Sign Up</a>
-          </div>
-      </div>
-  </nav>
 
-  <header class="relative h-screen gradient-bg text-white flex flex-col justify-center items-center text-center">
+<nav class="bg-gray-800 text-white p-4 sticky top-0 z-50 shadow-lg">
+<div class="container mx-auto flex justify-between items-center">
+<a href="index.html" class="text-2xl font-bold">BioAML</a>
+<div id="nav-links" class="space-x-6 flex items-center">
+    <a href="#modules" class="hover:text-blue-400 transition duration-300">Modules</a>
+    <a href="pricing.html" class="hover:text-blue-400 transition duration-300">Pricing</a>
+    <a href="signin.html" class="hover:text-blue-400 transition duration-300">Sign In</a>
+    <a href="signup.html" class="bg-blue-600 px-4 py-2 rounded-full font-semibold hover:bg-blue-700 transition duration-300">Sign Up</a>
+</div>
+</div>
+</nav>
+
+<header class="relative h-screen gradient-bg text-white flex flex-col justify-center items-center text-center">
     <video autoplay muted loop class="absolute inset-0 w-full h-full object-cover opacity-50">
-      <source src="background.mp4" type="video/mp4">
-      Your browser does not support the video tag.
+    <source src="background.mp4" type="video/mp4">
+    Your browser does not support the video tag.
     </video>
     <div class="relative z-10">
-      <h1 class="text-5xl md:text-7xl font-bold mb-4 animate-fade-in">Welcome to BioAML</h1>
-      <p class="text-xl md:text-2xl mb-8">AI-Driven Solutions for Life</p>
-      <a href="#modules" class="bg-white text-blue-600 px-6 py-3 rounded-full font-semibold hover:bg-blue-100 transition duration-300">Explore Modules</a>
+    <h1 class="text-5xl md:text-7xl font-bold mb-4 animate-fade-in">Welcome to BioAML</h1>
+    <p class="text-xl md:text-2xl mb-8">AI-Driven Solutions for Life</p>
+    <a href="#modules" class="bg-white text-blue-600 px-6 py-3 rounded-full font-semibold hover:bg-blue-100 transition duration-300">Explore Modules</a>
     </div>
-  </header>
+</header>
 
-  <section id="modules" class="py-16 bg-white">
+<section id="modules" class="py-16 bg-white">
     <div class="container mx-auto px-4">
-      <h2 class="text-4xl font-bold text-center mb-12">Our AI Modules</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div class="bg-blue-50 p-6 rounded-lg shadow-lg hover-scale">
-          <div class="flex items-center mb-4">
-            <span class="text-4xl mr-4">🧬</span>
-            <h3 class="text-2xl font-semibold text-blue-600">Genomics</h3>
-          </div>
-          <ul class="list-disc list-inside space-y-2 text-gray-700">
-            <li><a class="text-blue-600 hover:underline"><strong>Virus Genomic Analysis Tool:</strong></a> AI tool to analyze viral genomes and predict potential to cause human disease.</li>
-            <li><a class="text-blue-600 hover:underline"><strong>Genome-to-Phenotype:</strong></a> Predict phenotypic outcomes from genomic data.</li>
-            <li><a class="text-blue-600 hover:underline"><strong>Population & Environmental Genomics:</strong></a> Analyze genetic diversity across populations and environments.</li>
-            <li><a class="text-blue-600 hover:underline"><strong>Cancer Genomic:</strong></a> Analyze genetic diversity across across different Cancers.</li>
-          </ul>
-          <a href="#genomics" class="mt-4 inline-block text-blue-600 font-semibold hover:underline">Learn More</a>
-        </div>
+        <h2 class="text-4xl font-bold text-center mb-12">Our AI Modules</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-blue-50 p-6 rounded-lg shadow-lg hover-scale">
+                <div class="flex items-center mb-4">
+                    <span class="text-4xl mr-4">🧬</span>
+                    <h3 class="text-2xl font-semibold text-blue-600">Genomics</h3>
+                </div>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><a class="text-blue-600 hover:underline"><strong>Virus Genomic Analysis Tool:</strong></a> AI tool to analyze viral genomes and predict potential to cause human disease.</li>
+                    <li><a class="text-blue-600 hover:underline"><strong>Genome-to-Phenotype:</strong></a> Predict phenotypic outcomes from genomic data.</li>
+                    <li><a class="text-blue-600 hover:underline"><strong>Population & Environmental Genomics:</strong></a> Analyze genetic diversity across populations and environments.</li>
+                    <li><a class="text-blue-600 hover:underline"><strong>Cancer Genomic:</strong></a> Analyze genetic diversity across across different Cancers.</li>
+                </ul>
+                <a href="#genomics" class="mt-4 inline-block text-blue-600 font-semibold hover:underline">Learn More</a>
+            </div>
 
-        <div class="bg-green-50 p-6 rounded-lg shadow-lg hover-scale">
-          <div class="flex items-center mb-4">
-            <span class="text-4xl mr-4">🩺</span>
-            <h3 class="text-2xl font-semibold text-green-600">Medical Imagery</h3>
-          </div>
-          <ul class="list-disc list-inside space-y-2 text-gray-700">
-            <li><a class="text-green-600 hover:underline"><strong>Angiography:</strong></a> AI tool to predict stenosis from vascular imaging.</li>
-            <li><a class="text-green-600 hover:underline"><strong>MRI Analysis:</strong></a> Enhanced interpretation of MRI scans for accurate diagnostics.</li>
-            <li><a class="text-green-600 hover:underline"><strong>X-Ray Processing:</strong></a> Automated detection of abnormalities in X-ray images.</li>
-          </ul>
-          <a href="#medical-imagery" class="mt-4 inline-block text-green-600 font-semibold hover:underline">Learn More</a>
+            <div class="bg-green-50 p-6 rounded-lg shadow-lg hover-scale">
+                <div class="flex items-center mb-4">
+                    <span class="text-4xl mr-4">🩺</span>
+                    <h3 class="text-2xl font-semibold text-green-600">Medical Imagery</h3>
+                </div>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><a class="text-green-600 hover:underline"><strong>Angiography:</strong></a> AI tool to predict stenosis from vascular imaging.</li>
+                    <li><a class="text-green-600 hover:underline"><strong>MRI Analysis:</strong></a> Enhanced interpretation of MRI scans for accurate diagnostics.</li>
+                    <li><a class="text-green-600 hover:underline"><strong>X-Ray Processing:</strong></a> Automated detection of abnormalities in X-ray images.</li>
+                </ul>
+                <a href="#medical-imagery" class="mt-4 inline-block text-green-600 font-semibold hover:underline">Learn More</a>
+            </div>
         </div>
-      </div>
     </div>
-  </section>
+</section>
 
-  <footer class="bg-gray-800 text-white py-6">
+<footer class="bg-gray-800 text-white py-6">
     <div class="container mx-auto text-center">
-      <p>&copy; 2025 BioAML. All rights reserved.</p>
+        <p>&copy; 2025 BioAML. All rights reserved.</p>
     </div>
-  </footer>
+</footer>
 
-  <style>
+<style>
     @keyframes fade-in {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     .animate-fade-in {
-      animation: fade-in 1s ease-out;
+        animation: fade-in 1s ease-out;
     }
-  </style>
+</style>
 </body>
 </html>
-
-
